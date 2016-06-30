@@ -2,7 +2,7 @@
 
 A Clojure library for the MarkLogic XML Content Connector for Java (XCC/J). Currently in alpha. Not yet on Clojars.
 
-The name comes from the [International Radiotelephony Spelling Alphabet](https://en.wikipedia.org/wiki/NATO_phonetic_alphabet)).
+The name comes from the [International Radiotelephony Spelling Alphabet](https://en.wikipedia.org/wiki/NATO_phonetic_alphabet).
 
 Sponsored by [LambdaWerk](https://lambdawerk.com/home).
 
