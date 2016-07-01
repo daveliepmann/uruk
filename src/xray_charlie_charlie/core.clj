@@ -73,8 +73,8 @@
     request))
 
 (defn- configure-session
-  "Configures the given Session object according to given options
-  map. Assumes correct types are passed: map
+  "Returns the given Session object, configured according to given
+  options map. Assumes correct types are passed: map
   for :default-request-options, Logger object for :logger, Object
   for :user-object, keyword for :transaction-mode, integer
   for :transaction-timeout."
@@ -91,25 +91,11 @@
     (.setTransactionTimeout session tt))
   session)
 
-(defn- create-session*
-  "Create a session (with no options) according to methods provided by
-  ContentSource:
-  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentSource.html"
-  ([uri] 
-   (.newSession (ContentSourceFactory/newContentSource (URI. uri))))
-  ([uri content-base]
-   (.newSession (ContentSourceFactory/newContentSource (URI. uri)) content-base))
-  ([uri user pwd]
-   (.newSession (ContentSourceFactory/newContentSource (URI. uri)) user pwd)) 
-  ([uri user pwd content-base] ;; <-- this is probably the one you want.
-   (.newSession (ContentSourceFactory/newContentSource (URI. uri)) user pwd content-base)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Session management
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; FIXME there is currently no way to pass URI, usr, pwd, plus content-base, with no options
 (defn create-session
   "Create a Session according to the given parameters, configured
   according to the given options map.
@@ -121,16 +107,19 @@
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentSource.html
   for allowed parameter arrangements."
   ([uri options]
-   (-> (create-session* uri)
+   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri)))
        (configure-session options)))
   ([uri content-base options]
-   (-> (create-session* uri content-base)
+   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri))
+                    content-base)
        (configure-session options)))
   ([uri user pwd options]
-   (-> (create-session* uri user pwd)
+   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri))
+                    user pwd)
        (configure-session options))) 
   ([uri user pwd content-base options]
-   (-> (create-session* uri user pwd content-base)
+   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri))
+                    user pwd content-base)
        (configure-session options))))
 ;; TODO I find the repetition of configure-session cluttering.  Probably not a big deal.
 
