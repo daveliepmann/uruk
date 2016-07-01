@@ -43,10 +43,8 @@
       (throw (IllegalArgumentException. "Invalid request option. Keywords passed in `options` must be a subset of `valid-request-options`.")))
     (when-let [ardm (:auto-retry-delay-millis options)]
       (.setAutoRetryDelayMillis request ardm))
-    (when (or (true? (:cache-result options))
-              (false? (:cache-result options)))
+    (when (contains? options :cache-result)
       (.setCacheResult request (:cache-result options)))
-    ;; FIXME This does not deal with {:cache-result nil} in a sensible way.  Better check for key presence then true?/false?
     (when-let [dxv (:default-xquery-version options)]
       (.setDefaultXQueryVersion request dxv))
     ;; TODO A macro might be useful to replace the chain of when-lets with use-once variable names
