@@ -38,43 +38,41 @@
   for supported keywords."
   [options]
   (let [request (RequestOptions.)]
-    (if (every? valid-request-options (keys options))
-      ;; TODO I would prefer when-not/throw/... instead of if/do/.../throw
-      (do (when-let [ardm (:auto-retry-delay-millis options)]
-            (.setAutoRetryDelayMillis request ardm))
-          (when (or (true? (:cache-result options))
-                    (false? (:cache-result options)))
-            (.setCacheResult request (:cache-result options)))
-          ;; FIXME This does not deal with {:cache-result nil} in a sensible way.  Better check for key presence then true?/false?
-          (when-let [dxv (:default-xquery-version options)]
-            (.setDefaultXQueryVersion request dxv))
-          ;; TODO A macro might be useful to replace the chain of when-lets with use-once variable names
-          (when-let [epit (:effective-point-in-time options)]
-            (.setEffectivePointInTime request (BigInteger. (str epit))))
-          
-          (when-let [locale (:locale options)]
-            (.setLocale request locale)) ;; TODO enforce Locale object?
-          (when-let [mar (:max-auto-retry options)]
-            (.setMaxAutoRetry request (Integer. mar)))
-          (when-let [ql (:query-language options)]
-            (.setQueryLanguage request ql))
-          (when-let [rn (:request-name options)]
-            (.setRequestName request rn))
-          
-          (when-let [rtl (:request-time-limit options)]
-            (.setRequestTimeLimit request rtl))
-          (when-let [rbs (:result-buffer-size options)]
-            (.setResultBufferSize request rbs))
-          (when-let [tm (:timeout-millis options)]
-            (.setTimeoutMillis request tm))
-          (when-let [tz (:timezone options)] ;; TODO enforce type?
-            (.setTimeZone request tz))
-          ;; TODO check types of above
-          ;; TODO test each
-          request)
-      
+    (when-not (every? valid-request-options (keys options))
       ;; TODO switch to spec
-      (throw (IllegalArgumentException. "Invalid request option. Keywords passed in `options` must be a subset of `valid-request-options`.")))))
+      (throw (IllegalArgumentException. "Invalid request option. Keywords passed in `options` must be a subset of `valid-request-options`.")))
+    (when-let [ardm (:auto-retry-delay-millis options)]
+      (.setAutoRetryDelayMillis request ardm))
+    (when (or (true? (:cache-result options))
+              (false? (:cache-result options)))
+      (.setCacheResult request (:cache-result options)))
+    ;; FIXME This does not deal with {:cache-result nil} in a sensible way.  Better check for key presence then true?/false?
+    (when-let [dxv (:default-xquery-version options)]
+      (.setDefaultXQueryVersion request dxv))
+    ;; TODO A macro might be useful to replace the chain of when-lets with use-once variable names
+    (when-let [epit (:effective-point-in-time options)]
+      (.setEffectivePointInTime request (BigInteger. (str epit))))
+    
+    (when-let [locale (:locale options)]
+      (.setLocale request locale)) ;; TODO enforce Locale object?
+    (when-let [mar (:max-auto-retry options)]
+      (.setMaxAutoRetry request (Integer. mar)))
+    (when-let [ql (:query-language options)]
+      (.setQueryLanguage request ql))
+    (when-let [rn (:request-name options)]
+      (.setRequestName request rn))
+    
+    (when-let [rtl (:request-time-limit options)]
+      (.setRequestTimeLimit request rtl))
+    (when-let [rbs (:result-buffer-size options)]
+      (.setResultBufferSize request rbs))
+    (when-let [tm (:timeout-millis options)]
+      (.setTimeoutMillis request tm))
+    (when-let [tz (:timezone options)] ;; TODO enforce type?
+      (.setTimeZone request tz))
+    ;; TODO check types of above
+    ;; TODO test each
+    request))
 
 (defn- configure-session
   "Configures the given Session object according to given options
