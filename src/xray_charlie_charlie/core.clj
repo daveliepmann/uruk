@@ -39,16 +39,16 @@
   [options]
   (let [request (RequestOptions.)]
     (if (every? valid-request-options (keys options))
-      ;; I would prefer when-not/throw/... instead of if/do/.../throw
+      ;; TODO I would prefer when-not/throw/... instead of if/do/.../throw
       (do (when-let [ardm (:auto-retry-delay-millis options)]
             (.setAutoRetryDelayMillis request ardm))
           (when (or (true? (:cache-result options))
                     (false? (:cache-result options)))
             (.setCacheResult request (:cache-result options)))
-          ;; This does not deal with {:cache-result nil} in a sensible way.  Better check for key presence then true?/false?
+          ;; FIXME This does not deal with {:cache-result nil} in a sensible way.  Better check for key presence then true?/false?
           (when-let [dxv (:default-xquery-version options)]
             (.setDefaultXQueryVersion request dxv))
-          ;; A macro might be useful to replace the chain of when-lets with use-once variable names
+          ;; TODO A macro might be useful to replace the chain of when-lets with use-once variable names
           (when-let [epit (:effective-point-in-time options)]
             (.setEffectivePointInTime request (BigInteger. (str epit))))
           
@@ -136,7 +136,7 @@
   ([uri user pwd content-base options]
    (-> (create-session* uri user pwd content-base)
        (configure-session options))))
-;; I find the repetition of configure-session cluttering.  Probably not a big deal.
+;; TODO I find the repetition of configure-session cluttering.  Probably not a big deal.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -173,7 +173,7 @@
       (do (when-not (.isClosed rs)
             (.close rs))
           data))))
-;; Maybe make the request result adhere to the sequence protocol?  Can with-open be used, as
+;; FIXME Maybe make the request result adhere to the sequence protocol?  Can with-open be used, as
 ;; rs seems to be closable?  The function is hard to understand as it is.
 
 (defn execute-xquery
