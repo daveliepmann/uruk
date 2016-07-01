@@ -39,13 +39,16 @@
   [options]
   (let [request (RequestOptions.)]
     (if (every? valid-request-options (keys options))
+      ;; I would prefer when-not/throw/... instead of if/do/.../throw
       (do (when-let [ardm (:auto-retry-delay-millis options)]
             (.setAutoRetryDelayMillis request ardm))
           (when (or (true? (:cache-result options))
                     (false? (:cache-result options)))
             (.setCacheResult request (:cache-result options)))
+          ;; This does not deal with {:cache-result nil} in a sensible way.  Better check for key presence then true?/false?
           (when-let [dxv (:default-xquery-version options)]
             (.setDefaultXQueryVersion request dxv))
+          ;; A macro might be useful to replace the chain of when-lets with use-once variable names
           (when-let [epit (:effective-point-in-time options)]
             (.setEffectivePointInTime request (BigInteger. (str epit))))
           
@@ -133,6 +136,7 @@
   ([uri user pwd content-base options]
    (-> (create-session* uri user pwd content-base)
        (configure-session options))))
+;; I find the repetition of configure-session cluttering.  Probably not a big deal.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,6 +156,25 @@
                            (doto request-factory (.setOptions ro))
                            options)]
     (.submitRequest session request)))
+
+(defn execute-request
+  "Execute the given request to the database connection defined by the
+  given session. Apply request options or variables if given. Iterate
+  over results before returning them. NB: this iterating makes some
+  Java objects unusable, e.g. those used internal database reporting."
+  ;; FIXME don't make java objects unusable
+  [request-factory session query options variables]
+  (loop [rs (submit-request request-factory session query options variables)
+         data []]
+    (if (.hasNext rs)
+      (let [rsItem (.next rs)
+            item (.getItem rsItem)]
+        (recur rs (conj data (str item))))
+      (do (when-not (.isClosed rs)
+            (.close rs))
+          data))))
+;; Maybe make the request result adhere to the sequence protocol?  Can with-open be used, as
+;; rs seems to be closable?  The function is hard to understand as it is.
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
