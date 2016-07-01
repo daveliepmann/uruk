@@ -82,8 +82,10 @@
   [session options]
   (when-let [dro (:default-request-options options)]
     (.setDefaultRequestOptions session (request-options dro)))
-  (when-let [lgr (:logger options)] (.setLogger session lgr))
-  (when-let [uo (:user-object options)] (.setUserObject session uo))
+  (when-let [lgr (:logger options)]
+    (.setLogger session lgr))
+  (when-let [uo (:user-object options)]
+    (.setUserObject session uo))
   (when-let [tm (:transaction-mode options)]
     (.setTransactionMode session (transaction-modes tm)))
   (when-let [tt (:transaction-timeout options)]
@@ -151,44 +153,27 @@
                            options)]
     (.submitRequest session request)))
 
-(defn execute-request
-  "Execute the given request to the database connection defined by the
-  given session. Apply request options or variables if given. Iterate
-  over results before returning them. NB: this iterating makes some
-  Java objects unusable, e.g. those used internal database reporting."
-  ;; FIXME don't make java objects unusable
-  [request-factory session query options variables]
-  (loop [rs (submit-request request-factory session query options variables)
-         data []]
-    (if (.hasNext rs)
-      (let [rsItem (.next rs)
-            item (.getItem rsItem)]
-        (recur rs (conj data (str item))))
-      (do (when-not (.isClosed rs)
-            (.close rs))
-          data))))
-
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
   connection defined by the given session. Apply request options or
   variables if given."
   ([session query]
-   (execute-request (.newAdhocQuery session query) session query {} {}))
+   (submit-request (.newAdhocQuery session query) session query {} {}))
   ([session query options]
-   (execute-request (.newAdhocQuery session query) session query options {}))
+   (submit-request (.newAdhocQuery session query) session query options {}))
   ([session query options variables]
-   (execute-request (.newAdhocQuery session query) session query options variables)))
+   (submit-request (.newAdhocQuery session query) session query options variables)))
 
 (defn execute-module
   "Execute the named module as a request to the database connection
   defined by the given session. Apply request options or variables if
   given."
   ([session module]
-   (execute-request (.newModuleInvoke session module) session module {} {}))
+   (submit-request (.newModuleInvoke session module) session module {} {}))
   ([session module options]
-   (execute-request (.newModuleInvoke session module) session module options {}))
+   (submit-request (.newModuleInvoke session module) session module options {}))
   ([session module options variables]
-   (execute-request (.newModuleInvoke session module) session module options variables)))
+   (submit-request (.newModuleInvoke session module) session module options variables)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
