@@ -1,5 +1,6 @@
 (ns xray-charlie-charlie.core
   "Marklogic XCC core functions: session management, querying..."
+  (:require [clojure.data.json :as json])
   (:import [java.util.logging Logger]
            [com.marklogic.xcc ContentSourceFactory
             Session$TransactionMode
@@ -7,7 +8,107 @@
            [com.marklogic.xcc.types ValueType]
            java.net.URI))
 
-;;;; Helpers 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Type coercion
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn coerce-number
+  "Reads a number from a numeric Java object of a type from
+  com.marklogic.xcc.types. Returns nil if not a number. Designed for
+  robust number-handling while preventing read-string security
+  issues. Regex from http://stackoverflow.com/a/12285023/706499. See
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html"
+  [obj]
+  (let [s (.asString obj)]
+    (when (re-find #"^-?\d+\.?\d*$" s)
+      (clojure.edn/read-string s))))
+
+(def types
+  "Default mapping from MarkLogic XCC types (e.g. those that might be
+  returned in a query's result set) to Clojure functions intended to
+  convert to Clojure types. See
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html"
+  {;; ArrayNode TODO
+   ;; BooleanNode TODO probably .asBoolean; key unknown
+   
+   "cts:box" #(.asString %) ;; would be nice to convert box to seq of 4 numbers, unless that is disrupted by other element types
+   "cts:circle" #(.asString %)
+   "cts:point" #(.asString %)
+   "cts:polygon" #(.asString %)
+   
+   "json:array" #(json/read-str (.toString (.asJsonNode %))) ;; JSArray
+   "object-node()" #(json/read-str (.toString (.asJsonNode %))) ;; JSObject -- is this optimal detection method?
+   
+   ;; JsonItem - TODO find mocking mechanism or test with real data
+   
+   ;; NullNode TODO
+   ;; NumberNode TODO
+   ;; ObjectNode TODO
+
+   ;; FIXME XDM keys have only been mocked; unknown if it matches getValueType
+
+   ;; XdmAtomic TODO
+   ;; XdmAttribute TODO
+   "xdm:value" #(.asString %) ;; XdmBinary -- XXX unknown if the key used matches getValueType
+   "xdm:value" #(.asString %) ;; XdmComment -- XXX unknown if the key used matches getValueType
+   "xdm:document" #(.asString % ) ;; XdmDocument -- XXX unknown if the key used matches getValueType 
+   "xdm:value" #(.toString %) ;; XdmDuration
+   "xdm:element" #(.asString %) ;; XdmElement
+   ;; XdmItem TODO
+   ;; XdmNode TODO
+   ;; XdmProcessingInstruction TODO
+   ;; XdmSequence<I extends XdmItem> TODO
+   "xdm:text" #(.asString %)   ;; XdmText -- XXX unknown if the key used matches getValueType
+   "xdm:value" #(.asString %) ;; XdmValue -- XXX unknown if the key used matches getValueType
+   "xdm:variable" #(hash-map (.toString (.getName %))
+                             (.asString (.getValue %))) ;; XdmVariable -- XXX unknown if the key used matches getValueType
+
+   "xs:anyURI" str
+   "xs:base64Binary" str ;; TODO looks OK but test with image in DB
+   "xs:boolean" #(.asPrimitiveBoolean %)
+   "xs:date" str
+   "xs:dateTime" str
+   "xs:dayTimeDuration" str
+   "xs:decimal" coerce-number
+   "xs:double" coerce-number
+   "xs:duration" str
+   "xs:float" coerce-number
+   ;; Maybe strip hyphens from all Gregorian date-parts?
+   ;; or make conform to a particular date type?
+   "xs:gDay" str
+   "xs:gMonth" str
+   "xs:gMonthDay" str
+   "xs:gYear" str
+   "xs:gYearMonth" str
+   "xs:hexBinary" str ;; looks OK but test with real doc
+   "xs:integer" coerce-number
+   "xs:string" str
+   "xs:time" str
+   "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
+   "xs:yearMonthDuration" str})
+
+(defn result-type
+  ;; TODO docstring
+  ;; XXX assumes result is homogenous
+  [result]
+  (.toString (.getValueType (first (.toArray result)))))
+
+;; TODO allow user to pass in their own map of types (to be `merge`d)
+(defn coerce
+  ;; XXX is this named optimally?
+  ;; TODO docstring
+  [result-sequence]
+  ;; TODO throw informative exception if type not found in types
+  (let [result (map (fn [item] ((types (.toString (.getValueType item))) item))
+                    (.toArray result-sequence))]
+    (if (= 1 (count result))
+      (first result)
+      result)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Helpers for sessions and requests
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def transaction-modes
   "Mapping of keywords for valid Session transaction modes (per
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.TransactionMode.html)."
