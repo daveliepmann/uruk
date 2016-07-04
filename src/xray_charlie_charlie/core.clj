@@ -49,19 +49,18 @@
 
    ;; XdmAtomic TODO
    ;; XdmAttribute TODO
-   "xdm:value" #(.asString %) ;; XdmBinary -- XXX unknown if the key used matches getValueType
-   "xdm:value" #(.asString %) ;; XdmComment -- XXX unknown if the key used matches getValueType
-   "xdm:document" #(.asString % ) ;; XdmDocument -- XXX unknown if the key used matches getValueType 
-   "xdm:value" #(.toString %) ;; XdmDuration
-   "xdm:element" #(.asString %) ;; XdmElement
+   "binary()" #(.asString %) ;; XdmBinary -- XXX unknown if the key used matches getValueType
+   "comment()" #(.asString %) ;; XdmComment -- XXX unknown if the key used matches getValueType
+   "document()" #(.asString % ) ;; XdmDocument
+   "duration()" #(.toString %) ;; XdmDuration
+   "element()" #(.asString %) ;; XdmElement
    ;; XdmItem TODO
    ;; XdmNode TODO
    ;; XdmProcessingInstruction TODO
    ;; XdmSequence<I extends XdmItem> TODO
-   "xdm:text" #(.asString %)   ;; XdmText -- XXX unknown if the key used matches getValueType
-   "xdm:value" #(.asString %) ;; XdmValue -- XXX unknown if the key used matches getValueType
-   "xdm:variable" #(hash-map (.toString (.getName %))
-                             (.asString (.getValue %))) ;; XdmVariable -- XXX unknown if the key used matches getValueType
+   "text()" #(.asString %)   ;; XdmText -- XXX unknown if the key used matches getValueType
+   "variable()" #(hash-map (.toString (.getName %))
+                           (.asString (.getValue %))) ;; XdmVariable -- XXX unknown if the key used matches getValueType
 
    "xs:anyURI" str
    "xs:base64Binary" str ;; TODO looks OK but test with image in DB
