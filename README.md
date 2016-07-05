@@ -44,13 +44,13 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
   
   ;; After commit, updates are visible to other transactions. Commit
   ;; ends the transaction after current statement completes.
-  (.commit session) ;; <—- Transaction ends; updates are kept
+  (commit session) ;; <—- Transaction ends; updates are kept
 
   ;; Rollback discards changes and ends the transaction. The following
   ;; document deletion query never occurs, since it is rolled back
   ;; before calling commit:
   (execute-xquery session "xdmp:document-delete('/docs/mst1.xml')")
-  (.rollback session) ;; <– Transaction ends; updates are lost
+  (rollback session) ;; <– Transaction ends; updates are lost
   
   ;; Closing session without calling commit causes a rollback. The
   ;; following update is lost, since we don't commit before the end of
