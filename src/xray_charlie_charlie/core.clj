@@ -9,7 +9,7 @@
            java.net.URI))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Type coercion
+;;;; Type conversion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn convert-number
@@ -38,9 +38,7 @@
    
    "json:array" #(json/read-str (.toString (.asJsonNode %))) ;; JSArray
    "object-node()" #(json/read-str (.toString (.asJsonNode %))) ;; JSObject -- is this optimal detection method?
-   
    ;; JsonItem - TODO find mocking mechanism or test with real data
-   
    ;; NullNode TODO
    ;; NumberNode TODO
    ;; ObjectNode TODO
@@ -48,7 +46,7 @@
    ;; FIXME XDM keys have only been mocked; unknown if it matches getValueType
 
    ;; XdmAtomic TODO
-   "attribute()" #(.asString %) ;; XdmAttribute TODO
+   "attribute()" #(.asString %) ;; XdmAttribute
    "binary()" #(.asString %) ;; XdmBinary -- XXX unknown if the key used matches getValueType
    "comment()" #(.asString %) ;; XdmComment
    "document-node()" #(.asString %) ;; XdmDocument
@@ -70,6 +68,7 @@
    "xs:double" convert-number
    "xs:duration" str
    "xs:float" convert-number
+
    ;; Maybe strip hyphens from all Gregorian date-parts?
    ;; or make conform to a particular date type?
    "xs:gDay" str
@@ -84,6 +83,7 @@
    "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
    "xs:yearMonthDuration" str})
 
+;; FIXME this is not currently usable if convert-types is part of execute-xquery
 (defn result-type
   "Returns type string of the given query Result object. Currently
   assumes result is homogenous."
@@ -235,8 +235,9 @@
 (defn submit-request
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
-  with (possibly empty) `options` and `variables` maps."
-  [request-factory session query options variables]
+  with (possibly empty) `options` and `variables` maps. Applies type
+  conversion according to defaults and `types`."
+  [request-factory session query options variables types]
   (let [ro      (request-options options)
         request (reduce-kv (fn [acc vname vval]
                              (.setNewVariable acc (name vname)
@@ -244,48 +245,24 @@
                              acc)
                            (doto request-factory (.setOptions ro))
                            options)]
-    (.submitRequest session request)))
-
-(defn execute-request
-  "Execute the given request to the database connection defined by the
-  given session. Apply request options or variables if given. Iterate
-  over results before returning them. NB: this iterating makes some
-  Java objects unusable, e.g. those used internal database reporting."
-  ;; FIXME don't make java objects unusable
-  [request-factory session query options variables]
-  (loop [rs (submit-request request-factory session query options variables)
-         data []]
-    (if (.hasNext rs)
-      (let [rsItem (.next rs)
-            item (.getItem rsItem)]
-        (recur rs (conj data (str item))))
-      (do (when-not (.isClosed rs)
-            (.close rs))
-          data))))
-;; FIXME Maybe make the request result adhere to the sequence protocol?  Can with-open be used, as
-;; rs seems to be closable?  The function is hard to understand as it is.
+    (cond (= :raw types) (.submitRequest session request)
+          :else (convert-types (.submitRequest session request) types))))
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
   connection defined by the given session. Apply request options or
-  variables if given."
-  ([session query]
-   (submit-request (.newAdhocQuery session query) session query {} {}))
-  ([session query options]
-   (submit-request (.newAdhocQuery session query) session query options {}))
-  ([session query options variables]
-   (submit-request (.newAdhocQuery session query) session query options variables)))
+  variables if given. Applies default type conversion, overridden by
+  `types` map if given."
+  [session query & {:keys [options variables types]}]
+  (submit-request (.newAdhocQuery session query) session query options variables types))
 
 (defn execute-module
   "Execute the named module as a request to the database connection
   defined by the given session. Apply request options or variables if
+  given. Applies default type conversion, overridden by `types` map if
   given."
-  ([session module]
-   (submit-request (.newModuleInvoke session module) session module {} {}))
-  ([session module options]
-   (submit-request (.newModuleInvoke session module) session module options {}))
-  ([session module options variables]
-   (submit-request (.newModuleInvoke session module) session module options variables)))
+  [session module & {:keys [options variables types]}]
+  (submit-request (.newModuleInvoke session module) session module options variables types))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
