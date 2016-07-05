@@ -83,7 +83,6 @@
    "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
    "xs:yearMonthDuration" str})
 
-;; FIXME this is not currently usable if convert-types is part of execute-xquery
 (defn result-type
   "Returns type string of the given query Result object. Currently
   assumes result is homogenous."
@@ -96,7 +95,7 @@
   overridden (in part or in whole) with the optional parameter
   `type-mapping`, which should contain a transformation function keyed
   by an XCC type string. See `types` above."
-  [result-sequence & [type-mapping]]
+  [result-sequence & [type-mapping]] 
   ;; TODO throw informative exception if type not found in types
   (let [result (map (fn [item] (((merge types
                                        (when (map? type-mapping)
@@ -269,34 +268,27 @@
 ;;;; Transactions
 ;;;;
 ;;;; Users must manage their own transactions, either from within
-;;;; XQuery or programmatically. If working programmatically, one may
-;;;; use these functions after setting the transaction mode to
-;;;; `:update` or `:query` on the session via the `:transaction-mode`
-;;;; option. Note that `execute-query` uses `.submitQuery` under the
-;;;; hood.
+;;;; XQuery or programmatically. If working programmatically, wrapping
+;;;; requests in `with-open` is strongly recommended. One may use
+;;;; these functions within `with-open` after setting the transaction
+;;;; mode to `:update` or `:query` on the session via the
+;;;; `:transaction-mode` option.
 ;;;; 
 ;;;; See https://docs.marklogic.com/guide/xcc/concepts#id_23310
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn open-transaction
-  "Returns a newly started transaction, optionally setting `name` or `time-limit`
-  (in seconds)."
-  ([client] (.openTransaction client))
-  ([client name] (.openTransaction client name))
-  ([client name time-limit] (.openTransaction client name time-limit)))
-
 (defn commit
-  "Commit `transaction` when it successfully finishes."
-  [transaction]
-  (.commit transaction))
+  "Commit `session` when current queries successfully finish."
+  [session]
+  (.commit session))
 
 (defn rollback
-  "Rollback a multi-statement transaction to reset any actions that
-  have already occured in that transaction; for example, delete any
-  created items, restore any deleted items, revert back any edits,
-  etc."
-  [transaction]
-  (.rollback transaction))
+  "Rollback a multi-statement transaction to reset any un-committed
+  transactions that have already occured in that transaction; for
+  example, delete any created items, restore any deleted items, revert
+  back any edits, etc."
+  [session]
+  (.rollback session))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
