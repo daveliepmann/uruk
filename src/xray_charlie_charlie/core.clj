@@ -12,7 +12,7 @@
 ;;;; Type coercion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn coerce-number
+(defn convert-number
   "Reads a number from a numeric Java object of a type from
   com.marklogic.xcc.types. Returns nil if not a number. Designed for
   robust number-handling while preventing read-string security
@@ -48,17 +48,15 @@
    ;; FIXME XDM keys have only been mocked; unknown if it matches getValueType
 
    ;; XdmAtomic TODO
-   ;; XdmAttribute TODO
+   "attribute()" #(.asString %) ;; XdmAttribute TODO
    "binary()" #(.asString %) ;; XdmBinary -- XXX unknown if the key used matches getValueType
-   "comment()" #(.asString %) ;; XdmComment -- XXX unknown if the key used matches getValueType
-   "document()" #(.asString % ) ;; XdmDocument
-   "duration()" #(.toString %) ;; XdmDuration
+   "comment()" #(.asString %) ;; XdmComment
+   "document-node()" #(.asString %) ;; XdmDocument
+   "duration()" #(.toString %) ;; XdmDuration XXX may only ever come through as xs:duration
    "element()" #(.asString %) ;; XdmElement
    ;; XdmItem TODO
-   ;; XdmNode TODO
-   ;; XdmProcessingInstruction TODO
-   ;; XdmSequence<I extends XdmItem> TODO
-   "text()" #(.asString %)   ;; XdmText -- XXX unknown if the key used matches getValueType
+   "text()" #(.asString %)
+   ;; XdmText -- XXX unknown if the key used matches getValueType
    "variable()" #(hash-map (.toString (.getName %))
                            (.asString (.getValue %))) ;; XdmVariable -- XXX unknown if the key used matches getValueType
 
@@ -68,10 +66,10 @@
    "xs:date" str
    "xs:dateTime" str
    "xs:dayTimeDuration" str
-   "xs:decimal" coerce-number
-   "xs:double" coerce-number
+   "xs:decimal" convert-number
+   "xs:double" convert-number
    "xs:duration" str
-   "xs:float" coerce-number
+   "xs:float" convert-number
    ;; Maybe strip hyphens from all Gregorian date-parts?
    ;; or make conform to a particular date type?
    "xs:gDay" str
@@ -80,29 +78,35 @@
    "xs:gYear" str
    "xs:gYearMonth" str
    "xs:hexBinary" str ;; looks OK but test with real doc
-   "xs:integer" coerce-number
+   "xs:integer" convert-number
    "xs:string" str
    "xs:time" str
    "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
    "xs:yearMonthDuration" str})
 
 (defn result-type
-  ;; TODO docstring
-  ;; XXX assumes result is homogenous
+  "Returns type string of the given query Result object. Currently
+  assumes result is homogenous."
   [result]
   (.toString (.getValueType (first (.toArray result)))))
 
-;; TODO allow user to pass in their own map of types (to be `merge`d)
-(defn coerce
-  ;; XXX is this named optimally?
-  ;; TODO docstring
-  [result-sequence]
+(defn convert-types
+  "Return the result of applying type conversion to the given
+  MarkLogic query result sequence. Default type mappings can be
+  overridden (in part or in whole) with the optional parameter
+  `type-mapping`, which should contain a transformation function keyed
+  by an XCC type string. See `types` above."
+  [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
-  (let [result (map (fn [item] ((types (.toString (.getValueType item))) item))
+  (let [result (map (fn [item] (((merge types
+                                       (when (map? type-mapping)
+                                         type-mapping))
+                                (.toString (.getValueType item))) item))
                     (.toArray result-sequence))]
     (if (= 1 (count result))
       (first result)
       result)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Helpers for sessions and requests
