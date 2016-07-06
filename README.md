@@ -91,8 +91,8 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
 ```
 
 ## TODO
-    - release on Clojars
-    - revise README examples to `:require` and alias core rather than `:refer :all`
+  - release on Clojars
+  - revise README examples to `:require` and alias core rather than `:refer :all`
 
 ## License
 
