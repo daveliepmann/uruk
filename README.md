@@ -10,21 +10,29 @@ Sponsored by [LambdaWerk](https://lambdawerk.com/home).
 
 Basic usage takes the form of:
 ``` clojure
-(with-open [session (create-session xdbc-uri db-usr db-pwd db-name)]
+(with-open [session (create-session {:uri xdbc-uri :content-base database-name
+                                     :user database-user :password database-pwd})]
   (execute-xquery session xquery-string))
 ```
 ...of which a concrete example is:
 ``` clojure
-(with-open [session (create-session "xdbc://localhost:8383/"
-                                    "rest-admin" "password" "TutorialDB" {})]
+(with-open [session (create-session {:uri "xdbc://localhost:8383/"
+                                     :user "rest-writer" :password "password"})]
   (execute-xquery session "\"hello world\""))
 ```
-...which in this case should return `"hello world"`.
+...which in this case should return `"hello world"` (if you provide valid credentials).
 
-Basic type conversion is performed automatically for most XCC types. If for some reason you need access to the raw results, pass `:raw` to the optional typed parameter `:types`, like so:
+Let's `def` our database information for concision's sake:
 ``` clojure
-(with-open [session (create-session "xdbc://localhost:8383/"
-                                    "rest-admin" "password" "TutorialDB" {})]
+(def db {:uri "xdbc://localhost:8383/"
+         :user "rest-admin" :password "password"
+         :content-base "TutorialDB"})
+```
+
+### Types
+Basic type conversion is performed automatically for most [XCC types](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html). If for some reason you need access to the raw results, pass `:raw` to the optional typed parameter `:types`, like so, using the database info we just defined:
+``` clojure
+(with-open [session (create-session db)]
   (execute-xquery session "\"hello world\"" :types :raw))
 
 => #object[com.marklogic.xcc.impl.CachedResultSequence 0x2c034c22 "CachedResultSequence: size=1, closed=false, cursor=-1"]
@@ -32,8 +40,7 @@ Basic type conversion is performed automatically for most XCC types. If for some
 
 This lets you inspect result types with `result-type`:
 ``` clojure
-(with-open [session (create-session "xdbc://localhost:8383/"
-                                    "rest-admin" "password" "TutorialDB" {})]
+(with-open [session (create-session db)]
   (result-type (execute-xquery session "\"hello world\"" :types :raw)))
 
 => "xs:string"
@@ -42,8 +49,7 @@ This lets you inspect result types with `result-type`:
 Those result types form the keys to the `types` map, whose values are functions used to transform result items into more manageable Clojure types. For most types that’s as simple as `"document-node()" #(.asString %)` (for XdmDocuments) or reading the number contained in a string. But if you need more in-depth handling of results, you can override the default mappings–a la carte!–by passing a map to the aforementioned `types` parameter, like so:
 
 ``` clojure
-(with-open [session (create-session "xdbc://localhost:8383/"
-                                    "rest-admin" "password" "TutorialDB" {})]
+(with-open [session (create-session db)]
   (execute-xquery session
                   "xquery version \"1.0-ml\"; doc('/dir/unwieldy.xml')"
                   :types {"document-node()" #(custom-function %)}))
@@ -60,9 +66,7 @@ Multiple database updates that must occur together can take advantage of transac
 We translate the original Java to Clojure, taking advantage of Clojure’s `with-open` idiom:
 
 ``` clojure
-(with-open [session (create-session "xdbc://blahblah:8383/"
-                                    "user" "password" "databaseName"
-                                    {:transaction-mode :update})]
+(with-open [session (create-session db {:transaction-mode :update})]
   ;; The first request (query) starts a new, multi-statement transaction:
   (execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
   

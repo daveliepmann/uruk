@@ -200,31 +200,43 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn create-session
-  "Create a Session according to the given parameters, configured
-  according to the given options map.
-  
-  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html
+  "Create a Session for querying and transacting with. Parameter
+  `db-info` describing database connection information must
+  include :uri key, and may optionally include connection information
+  for :content-base (database name), and/or :user and :password.
+
+  See `newSession` methods at
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentSource.html
+  for detail on allowed parameter arrangements.
+
+  If optional `options` map is passed, the session is configured
+  accordingly. See
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html
   for valid options. (Note that request options are distinct from
-  session options, though default request options *can* be set for the session.)
-  
-  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentSource.html
-  for allowed parameter arrangements."
-  ([uri options]
-   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri)))
-       (configure-session options)))
-  ([uri content-base options]
-   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri))
-                    content-base)
-       (configure-session options)))
-  ([uri user pwd options]
-   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri))
-                    user pwd)
-       (configure-session options))) 
-  ([uri user pwd content-base options]
-   (-> (.newSession (ContentSourceFactory/newContentSource (URI. uri))
-                    user pwd content-base)
-       (configure-session options))))
-;; TODO I find the repetition of configure-session cluttering.  Probably not a big deal.
+  session options, though default request options *can* be set for the
+  session.)"
+  [db-info & [options]]
+  (let [{:keys [uri user password content-base]} db-info
+        cs (ContentSourceFactory/newContentSource (URI. (:uri db-info)))
+        session (cond
+                  (and (nil? content-base)
+                       (or (nil? user)
+                           (nil? password))) (.newSession cs)
+
+                  (and (seq content-base)
+                       (or (nil? user)
+                           (nil? password))) (.newSession cs content-base)
+
+                  (and (seq user)
+                       (seq password)
+                       (nil? content-base)) (.newSession cs user password)
+
+                  (and (seq user)
+                       (seq password)
+                       (seq content-base)) (.newSession cs user password content-base))]
+    (if (map? options)
+      (configure-session session options)
+      session)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -289,24 +301,3 @@
   back any edits, etc."
   [session]
   (.rollback session))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Miscellania
-;;;; Convenience functions and the like
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn default-permissions
-  "Convenience function to return the permissions any new document
-  would get if the current user were to insert a document without
-  specifying the default permissions.
-
-  See https://docs.marklogic.com/xdmp:default-permissions"
-  ;; TODO convert from XML to JSON
-  ;; TODO maybe look up names of returned role-ids?
-  [uri user pwd content-base options]
-  (with-open [session (create-session uri user pwd content-base options)]
-    (let [query "xdmp:default-permissions()"]
-      (apply str (map #(.asString %)
-                      (.toArray (submit-request (.newAdhocQuery session query)
-                                                session query {} {})))))))
