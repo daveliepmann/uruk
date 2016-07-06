@@ -16,10 +16,38 @@ Basic usage takes the form of:
 ...of which a concrete example is:
 ``` clojure
 (with-open [session (create-session "xdbc://localhost:8383/"
-                                    "rest-admin" "x" "TutorialDB")]
+                                    "rest-admin" "password" "TutorialDB" {})]
   (execute-xquery session "\"hello world\""))
 ```
-...which in this case should return:`"hello world"`
+...which in this case should return `"hello world"`.
+
+Basic type conversion is performed automatically for most XCC types. If for some reason you need access to the raw results, pass `:raw` to the optional typed parameter `:types`, like so:
+``` clojure
+(with-open [session (create-session "xdbc://localhost:8383/"
+                                    "rest-admin" "password" "TutorialDB" {})]
+  (execute-xquery session "\"hello world\"" :types :raw))
+
+=> #object[com.marklogic.xcc.impl.CachedResultSequence 0x2c034c22 "CachedResultSequence: size=1, closed=false, cursor=-1"]
+```
+
+This lets you inspect result types with `result-type`:
+``` clojure
+(with-open [session (create-session "xdbc://localhost:8383/"
+                                    "rest-admin" "password" "TutorialDB" {})]
+  (result-type (execute-xquery session "\"hello world\"" :types :raw)))
+
+=> "xs:string"
+```
+
+Those result types form the keys to the `types` map, whose values are functions used to transform result items into more manageable Clojure types. For most types that’s as simple as `"document-node()" #(.asString %)` (for XdmDocuments) or reading the number contained in a string. But if you need more in-depth handling of results, you can override the default mappings–a la carte!–by passing a map to the aforementioned `types` parameter, like so:
+
+``` clojure
+(with-open [session (create-session "xdbc://localhost:8383/"
+                                    "rest-admin" "password" "TutorialDB" {})]
+  (execute-xquery session
+                  "xquery version \"1.0-ml\"; doc('/dir/unwieldy.xml')"
+                  :types {"document-node()" #(custom-function %)}))
+```
 
 ### Transactions
 
