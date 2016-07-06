@@ -90,6 +90,10 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
   (execute-xquery session "xdmp:document-delete('/docs/mst1.xml')"))
 ```
 
+## TODO
+    - release on Clojars
+    - revise README examples to `:require` and alias core rather than `:refer :all`
+
 ## License
 
 Copyright © 2016 David Liepmann
