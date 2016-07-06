@@ -53,7 +53,7 @@ Those result types form the keys to the `types` map, whose values are functions 
 
 Multiple database updates that must occur together can take advantage of transactions. To borrow an example from the XCC Developer’s Guide:
 
->The following example demonstrates using multi-statement transactions in Java. The first multi-statement transaction in the session inserts two documents into the database, calling Session.commit to complete the transaction and commit the updates. The second transaction demonstrates the use of Session.rollback. The third transaction demonstrates implicitly rolling back updates by closing the session."
+>The following example demonstrates using multi-statement transactions in Java. The first multi-statement transaction in the session inserts two documents into the database, calling Session.commit to complete the transaction and commit the updates. The second transaction demonstrates the use of Session.rollback. The third transaction demonstrates implicitly rolling back updates by closing the session.
 
 – [Programming in XCC > Multi-Statement Transactions](https://docs.marklogic.com/guide/xcc/concepts#id_35788)
 
