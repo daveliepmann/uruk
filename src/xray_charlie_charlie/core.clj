@@ -28,8 +28,8 @@
   returned in a query's result set) to Clojure functions intended to
   convert to Clojure types. See
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html"
-  {;; ArrayNode TODO
-   ;; BooleanNode TODO probably .asBoolean; key unknown
+  {"array-node()" #(json/read-str (.toString (.asJsonNode %))) ;; ArrayNode
+   "boolean-node()" #(.asBoolean %)  ;; BooleanNode
    
    "cts:box" #(.asString %) ;; would be nice to convert box to seq of 4 numbers, unless that is disrupted by other element types
    "cts:circle" #(.asString %)
@@ -37,13 +37,12 @@
    "cts:polygon" #(.asString %)
    
    "json:array" #(json/read-str (.toString (.asJsonNode %))) ;; JSArray
-   "object-node()" #(json/read-str (.toString (.asJsonNode %))) ;; JSObject -- is this optimal detection method?
-   ;; JsonItem - TODO find mocking mechanism or test with real data
-   ;; NullNode TODO
-   ;; NumberNode TODO
-   ;; ObjectNode TODO
+   "json:object" #(json/read-str (.toString (.asJsonNode %))) ;; JSObject
 
-   ;; FIXME XDM keys have only been mocked; unknown if it matches getValueType
+   ;; JsonItem TODO
+   "null-node()" #(json/read-str (.toString (.asJsonNode %))) ;; NullNode
+   "number-node()" convert-number ;; NumberNode
+   "object-node()" #(json/read-str (.toString (.asJsonNode %))) ;; ObjectNode
 
    ;; XdmAtomic TODO
    "attribute()" #(.asString %) ;; XdmAttribute
@@ -53,8 +52,7 @@
    "duration()" #(.toString %) ;; XdmDuration XXX may only ever come through as xs:duration
    "element()" #(.asString %) ;; XdmElement
    ;; XdmItem TODO
-   "text()" #(.asString %)
-   ;; XdmText -- XXX unknown if the key used matches getValueType
+   "text()" #(.asString %) ;; XdmText
    "variable()" #(hash-map (.toString (.getName %))
                            (.asString (.getValue %))) ;; XdmVariable -- XXX unknown if the key used matches getValueType
 
@@ -68,7 +66,6 @@
    "xs:double" convert-number
    "xs:duration" str
    "xs:float" convert-number
-
    ;; Maybe strip hyphens from all Gregorian date-parts?
    ;; or make conform to a particular date type?
    "xs:gDay" str
@@ -78,6 +75,7 @@
    "xs:gYearMonth" str
    "xs:hexBinary" str ;; looks OK but test with real doc
    "xs:integer" convert-number
+   "xs:QName" str
    "xs:string" str
    "xs:time" str
    "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
@@ -120,8 +118,9 @@
    :update-auto-commit Session$TransactionMode/UPDATE_AUTO_COMMIT})
 
 (def valid-request-options
-  "Set of valid request options for Sessions or Request objects.
-  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/RequestOptions.html"
+  "Set of valid request options for Request objects. Can also be
+  passed to Sessions as :default-request-options. See
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/RequestOptions.html"
   #{:auto-retry-delay-millis
     :cache-result
     :default-xquery-version
