@@ -1,5 +1,6 @@
 (ns xray-charlie-charlie.core
-  "Marklogic XCC core functions: session management, querying..."
+  "Marklogic XCC core functions: session management, querying, type
+  conversion, transactions."
   (:require [clojure.data.json :as json])
   (:import [java.util.logging Logger]
            [com.marklogic.xcc ContentSourceFactory
