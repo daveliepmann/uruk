@@ -53,7 +53,7 @@
 
    ;; XdmAtomic TODO
    "attribute()" #(.asString %) ;; XdmAttribute
-   "binary()" #(.asString %) ;; XdmBinary -- XXX unknown if the key used matches getValueType
+   "binary()" #(.asBinaryData %) ;; XdmBinary
    "comment()" #(.asString %) ;; XdmComment
    "document-node()" #(.asString %) ;; XdmDocument
    "duration()" #(.toString %) ;; XdmDuration XXX may only ever come through as xs:duration
@@ -64,7 +64,7 @@
                            (.asString (.getValue %))) ;; XdmVariable -- XXX unknown if the key used matches getValueType
 
    "xs:anyURI" str
-   "xs:base64Binary" str ;; TODO looks OK but test with image in DB
+   "xs:base64Binary" #(.asBinaryData %) ;; XSBase64Binary
    "xs:boolean" #(.asPrimitiveBoolean %)
    "xs:date" str
    "xs:dateTime" str
