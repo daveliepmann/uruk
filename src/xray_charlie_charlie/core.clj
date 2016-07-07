@@ -24,12 +24,18 @@
     (when (re-find #"^-?\d+\.?\d*$" s)
       (clojure.edn/read-string s))))
 
+(defn java-json->clj-json
+  "Given a MarkLogic XCC JSON object, returns a Clojure representation
+  of its JSON data."
+  [java-json]
+  (json/read-str (.toString (.asJsonNode java-json))))
+
 (def types
   "Default mapping from MarkLogic XCC types (e.g. those that might be
   returned in a query's result set) to Clojure functions intended to
   convert to Clojure types. See
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html"
-  {"array-node()" #(json/read-str (.toString (.asJsonNode %))) ;; ArrayNode
+  {"array-node()" java-json->clj-json ;; ArrayNode
    "boolean-node()" #(.asBoolean %)  ;; BooleanNode
    
    "cts:box" #(.asString %) ;; would be nice to convert box to seq of 4 numbers, unless that is disrupted by other element types
@@ -37,13 +43,13 @@
    "cts:point" #(.asString %)
    "cts:polygon" #(.asString %)
    
-   "json:array" #(json/read-str (.toString (.asJsonNode %))) ;; JSArray
-   "json:object" #(json/read-str (.toString (.asJsonNode %))) ;; JSObject
+   "json:array" java-json->clj-json ;; JSArray
+   "json:object" java-json->clj-json ;; JSObject
 
    ;; JsonItem TODO
-   "null-node()" #(json/read-str (.toString (.asJsonNode %))) ;; NullNode
+   "null-node()" java-json->clj-json ;; NullNode
    "number-node()" convert-number ;; NumberNode
-   "object-node()" #(json/read-str (.toString (.asJsonNode %))) ;; ObjectNode
+   "object-node()" java-json->clj-json ;; ObjectNode
 
    ;; XdmAtomic TODO
    "attribute()" #(.asString %) ;; XdmAttribute
