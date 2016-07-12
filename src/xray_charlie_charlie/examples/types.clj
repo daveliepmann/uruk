@@ -93,6 +93,14 @@
 
 ;; TODO
 
+;; XDMBinary
+(with-open [sess (create-session db)]
+  (execute-xquery sess
+                  "xquery version \"1.0-ml\"; xdmp:document-load(\"/path/to/mlfavicon.png\");")
+  (execute-xquery sess
+                  "xquery version \"1.0-ml\"; doc(\"/path/to/mlfavicon.png\");"))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; XS types
