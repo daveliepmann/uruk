@@ -3,9 +3,11 @@
   conversion, transactions."
   (:require [clojure.data.json :as json])
   (:import [java.util.logging Logger]
-           [com.marklogic.xcc ContentSourceFactory
+           [com.marklogic.xcc
             Session$TransactionMode
-            RequestOptions]
+            RequestOptions
+            ContentCreateOptions ContentPermission ContentCapability ContentSourceFactory
+            DocumentFormat DocumentRepairLevel]
            [com.marklogic.xcc.types ValueType]
            java.net.URI))
 
@@ -246,7 +248,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; XQuery Requests
+;;;; Working with sessions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn submit-request
@@ -280,6 +282,98 @@
   given."
   [session module & {:keys [options variables types]}]
   (submit-request (.newModuleInvoke session module) session module options variables types))
+
+;;;;;
+
+(def valid-content-creation-options
+  "Set of valid creation options for Content objects. See
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html" 
+  #{:buffer-size
+    :collections
+    :encoding
+    
+    :format
+    ;; The following keys correspond to convenience methods in Java
+    ;; that I don't currently find useful or idiomatic in Clojure:
+    ;; :format-binary :format-json :format-text :format-xml
+
+    :graph
+    :language
+    :locale
+    :namespace
+    :permissions
+    :placement-keys
+    :quality
+    :repair-level
+    :resolve-buffer-size
+    :resolve-entities
+    :temporal-collection})
+
+(defn- content-creation-options
+  "Creates a ContentCreateOptions object (to pass to a ContentFactory
+  newContent call) out of the given options map. See
+  `valid-content-creation-options` for supported keywords."
+  [options]
+  (let [cco (ContentCreateOptions.)]
+    (when-not (every? valid-content-creation-options (keys options))
+      ;; TODO switch to spec
+      (throw (IllegalArgumentException. "Invalid content creation option. Keywords passed in `options` must be a subset of `valid-content-creation-options`.")))
+    (when-let [bs (:buffer-size options)]
+      (.setBufferSize cco bs))
+    (when-let [c (:collections options)]
+      (.setCollections cco (into-array String c)))
+    (when-let [e (:encoding options)]
+      (.setEncoding cco e))
+    (when-let [f (:format options)]
+      (.setFormat cco (case f
+                        :xml    DocumentFormat/XML
+                        :json   DocumentFormat/JSON
+                        :text   DocumentFormat/TEXT
+                        :none   DocumentFormat/NONE
+                        :binary DocumentFormat/BINARY)))
+    
+    (when-let [g (:graph options)]
+      (.setGraph cco g))
+    (when-let [lang (:language options)]
+      (.setLanguage cco lang))
+    (when-let [locale (:locale options)]
+      (.setLocale cco locale))
+    (when-let [n (:namespace options)]
+      (.setNamespace cco n))
+    (when-let [permissions (:permissions options)]
+      (.setPermissions cco (into-array ContentPermission
+                                       (reduce (fn [permissions [role capability]]
+                                                 (conj permissions
+                                                       (ContentPermission.
+                                                        (case capability
+                                                          :execute ContentCapability/EXECUTE
+                                                          :insert  ContentCapability/INSERT
+                                                          :read    ContentCapability/READ
+                                                          :update  ContentCapability/UPDATE)
+                                                        role)))
+                                               []
+                                               permissions))))
+    
+    (when-let [pk (:placement-keys options)]
+      (.setPlaceKeys cco pk)) ;; FIXME bigint and long array casts?
+    (when-let [q (:quality options)]
+      (.setQuality cco q))
+    (when-let [rl (:repair-level options)]
+      (.setRepairLevel cco (case rl
+                             :default DocumentRepairLevel/DEFAULT
+                             :full    DocumentRepairLevel/FULL
+                             :none    DocumentRepairLevel/NONE)))
+    (when-let [rbs (:resolve-buffer-size options)]
+      (.setResolveBufferSize cco rbs))
+    (when-let [re (:resolve-entities options)]
+      (.setResolveEntities cco re))
+    (when-let [tc (:temporal-collection options)]
+      (.setTemporalCollection cco tc))
+    cco))
+
+(defn insert-content
+  [session content] ;; XXX Content object?
+  (.insertContent session content))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
