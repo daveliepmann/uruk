@@ -310,6 +310,18 @@
     :resolve-entities
     :temporal-collection})
 
+(def doc-format
+  {:xml    DocumentFormat/XML
+   :json   DocumentFormat/JSON
+   :text   DocumentFormat/TEXT
+   :none   DocumentFormat/NONE
+   :binary DocumentFormat/BINARY})
+
+(def repair-level
+  {:default DocumentRepairLevel/DEFAULT
+   :full    DocumentRepairLevel/FULL
+   :none    DocumentRepairLevel/NONE})
+
 (defn content-creation-options
   "Creates a ContentCreateOptions object (to pass to a ContentFactory
   newContent call) out of the given options map. See
@@ -326,12 +338,7 @@
     (when-let [e (:encoding options)]
       (.setEncoding cco e))
     (when-let [f (:format options)]
-      (.setFormat cco (case f
-                        :xml    DocumentFormat/XML
-                        :json   DocumentFormat/JSON
-                        :text   DocumentFormat/TEXT
-                        :none   DocumentFormat/NONE
-                        :binary DocumentFormat/BINARY)))
+      (.setFormat cco (doc-format f)))
     
     (when-let [g (:graph options)]
       (.setGraph cco g))
@@ -341,29 +348,24 @@
       (.setLocale cco locale))
     (when-let [n (:namespace options)]
       (.setNamespace cco n))
-    (when-let [permissions (:permissions options)]
+    (when-let [perms (:permissions options)]
       (.setPermissions cco (into-array ContentPermission
-                                       (reduce (fn [permissions [role capability]]
-                                                 (conj permissions
-                                                       (ContentPermission.
-                                                        (case capability
-                                                          :execute ContentCapability/EXECUTE
-                                                          :insert  ContentCapability/INSERT
-                                                          :read    ContentCapability/READ
-                                                          :update  ContentCapability/UPDATE)
-                                                        role)))
+                                       (reduce (fn [permissions permission]
+                                                 (conj permissions (ContentPermission. (case (val (first permission))
+                                                                                         :execute ContentCapability/EXECUTE
+                                                                                         :insert  ContentCapability/INSERT
+                                                                                         :read    ContentCapability/READ
+                                                                                         :update  ContentCapability/UPDATE)
+                                                                                       (key (first permission)))))
                                                []
-                                               permissions))))
+                                               perms))))
     
     (when-let [pk (:placement-keys options)]
       (.setPlaceKeys cco pk)) ;; FIXME bigint and long array casts?
     (when-let [q (:quality options)]
       (.setQuality cco q))
     (when-let [rl (:repair-level options)]
-      (.setRepairLevel cco (case rl
-                             :default DocumentRepairLevel/DEFAULT
-                             :full    DocumentRepairLevel/FULL
-                             :none    DocumentRepairLevel/NONE)))
+      (.setRepairLevel cco (repair-level rl)))
     (when-let [rbs (:resolve-buffer-size options)]
       (.setResolveBufferSize cco rbs))
     (when-let [re (:resolve-entities options)]
@@ -371,6 +373,22 @@
     (when-let [tc (:temporal-collection options)]
       (.setTemporalCollection cco tc))
     cco))
+
+(defn describe-content-creation-options
+  [opts]
+  {:buffer-size (.getBufferSize opts)
+   :collections (map #(.toString %) (.getCollections opts))
+   :encoding (.getEncoding opts)
+   :format ((clojure.set/map-invert doc-format) (.getFormat opts))
+   :graph (.getGraph opts)
+   :language (.getLanguage opts)
+   :namespace (.getNamespace opts)
+   :permissions (map #(hash-map (.getRole %) (.toString (.getCapability %))) (.getPermissions opts)) 
+   :quality (.getQuality opts)
+   :repair-level ((clojure.set/map-invert repair-level) (.getRepairLevel opts))
+   :resolve-buffer-size (.getResolveBufferSize opts)
+   :resolve-entities (.getResolveEntities opts)
+   :temporal-collection (.getTemporalCollection opts)})
 
 (defn element->content
   "Given a clojure.data.xml.Element, returns a MarkLogic XCC Content
