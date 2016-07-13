@@ -1,4 +1,4 @@
-(ns xray-charlie-charlie.example.types
+(ns xray-charlie-charlie.examples.types
   "Type examples, mostly for demonstrating conversions."
   (:require [xray-charlie-charlie.core :refer :all]))
 
