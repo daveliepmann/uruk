@@ -1,12 +1,14 @@
 (ns xray-charlie-charlie.core
   "Marklogic XCC core functions: session management, querying, type
   conversion, transactions."
-  (:require [clojure.data.json :as json])
+  (:require [clojure.data.json :as json]
+            [clojure.data.xml :as xml])
   (:import [java.util.logging Logger]
            [com.marklogic.xcc
             Session$TransactionMode
             RequestOptions
-            ContentCreateOptions ContentPermission ContentCapability ContentSourceFactory
+            ContentCreateOptions ContentPermission ContentCapability
+            ContentSourceFactory ContentFactory
             DocumentFormat DocumentRepairLevel]
            [com.marklogic.xcc.types ValueType]
            java.net.URI))
@@ -291,7 +293,6 @@
   #{:buffer-size
     :collections
     :encoding
-    
     :format
     ;; The following keys correspond to convenience methods in Java
     ;; that I don't currently find useful or idiomatic in Clojure:
@@ -309,7 +310,7 @@
     :resolve-entities
     :temporal-collection})
 
-(defn- content-creation-options
+(defn content-creation-options
   "Creates a ContentCreateOptions object (to pass to a ContentFactory
   newContent call) out of the given options map. See
   `valid-content-creation-options` for supported keywords."
@@ -371,10 +372,33 @@
       (.setTemporalCollection cco tc))
     cco))
 
-(defn insert-content
-  [session content] ;; XXX Content object?
-  (.insertContent session content))
+(defn element->content
+  "Given a clojure.data.xml.Element, returns a MarkLogic XCC Content
+  object suitable for inserting to a database. Optionally takes a map
+  of content creation options per `content-creation-options`.
 
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Content.html
+  and https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentFactory.html"
+  ([uri element]
+   (element->content uri element {:format :xml}))
+  ([uri element options]
+   (ContentFactory/newContent uri (xml/emit-str element)
+                              (content-creation-options options))))
+
+(defn insert-element
+  "Inserts the given clojure.data.xml.Element `element` at the given
+  `uri` to the database/content-base according determined by the
+  current `session`. Optionally takes a map of content creation
+  options per `content-creation-options`.
+
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContent(com.marklogic.xcc.Content)"
+  ([session uri element]
+   (.insertContent session (element->content uri element)))
+  ([session uri element options]
+   (.insertContent session (element->content uri element options))))
+
+;; TODO? https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContent(com.marklogic.xcc.Content[])
+;; TODO? https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContentCollectErrors(com.marklogic.xcc.Content[])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Transactions
