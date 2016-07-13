@@ -90,6 +90,18 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
   (execute-xquery session "xdmp:document-delete('/docs/mst1.xml')"))
 ```
 
+### Inserting Clojure XML Elements
+
+A simple method is provided to insert `clojure.data.xml.Element`s:
+
+``` clojure
+(with-open [session (create-session db)]
+  (insert-element session "/content-factory/newcontent3" (clojure.data.xml/element :foo)))
+
+(with-open [sess (create-session db)]
+  (execute-xquery sess "xquery version \"1.0-ml\"; doc(\"/content-factory/newcontent3\")"))
+```
+
 ## TODO
   - release on Clojars
   - revise README examples to `:require` and alias core rather than `:refer :all`
