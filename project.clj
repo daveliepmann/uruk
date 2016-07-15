@@ -1,4 +1,4 @@
-(defproject xray-charlie-charlie "0.1.0"
+(defproject uruk "0.1.0"
   :description "Clojure wrapper of MarkLogic XCC/J client API"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"

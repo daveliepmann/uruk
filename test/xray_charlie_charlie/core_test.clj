@@ -1,6 +1,6 @@
-(ns xray-charlie-charlie.core-test
+(ns uruk.core-test
   (:require [clojure.test :refer :all]
-            [xray-charlie-charlie.core :refer :all]))
+            [uruk.core :refer :all]))
 
 (deftest session-parms-1
   (testing "Cannot create session with just URI"

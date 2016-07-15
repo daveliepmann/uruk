@@ -1,4 +1,4 @@
-(ns xray-charlie-charlie.core
+(ns uruk.core
   "Marklogic XCC core functions: session management, querying, type
   conversion, transactions."
   (:require [clojure.data.json :as json]

@@ -1,6 +1,6 @@
-(ns xray-charlie-charlie.examples.types
+(ns uruk.examples.types
   "Type examples, mostly for demonstrating conversions."
-  (:require [xray-charlie-charlie.core :refer :all]))
+  (:require [uruk.core :refer :all]))
 
 (def session
   (create-session "xdbc://localhost:8383/"

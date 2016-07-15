@@ -1,8 +1,8 @@
-# xray-charlie-charlie
+# uruk
 
-A Clojure library for the MarkLogic XML Content Connector for Java (XCC/J). Currently in alpha. Not yet on Clojars.
+A Clojure library for the MarkLogic XML Content Connector for Java (XCC/J). Made to help you access your Enterprise NoSQL database from Clojure.
 
-The name comes from the [International Radiotelephony Spelling Alphabet](https://en.wikipedia.org/wiki/NATO_phonetic_alphabet).
+Named after the ancient Sumerian city-state where some of the oldest known documents have been found. One can see Uruk as perhaps the first document database–and it certainly wasn’t organized relationally.
 
 Sponsored by [LambdaWerk](https://lambdawerk.com/home).
 
@@ -105,6 +105,9 @@ A simple method is provided to insert `clojure.data.xml.Element`s:
 ## TODO
   - release on Clojars
   - revise README examples to `:require` and alias core rather than `:refer :all`
+  - revise tests for new db connection scheme
+  - more tests
+  - spec?
 
 ## License
 
