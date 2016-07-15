@@ -1,5 +1,5 @@
 (defproject uruk "0.1.0"
-  :description "Clojure wrapper of MarkLogic XCC/J client API"
+  :description "Clojure wrapper of MarkLogic XML Content Connector For Java (XCC/J)"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

@@ -1,6 +1,6 @@
 # uruk
 
-A Clojure library for the MarkLogic XML Content Connector for Java (XCC/J). Made to help you access your Enterprise NoSQL database from Clojure.
+A Clojure library wrapping the MarkLogic XML Content Connector for Java (XCC/J). Made to help you access your Enterprise NoSQL database from Clojure.
 
 Named after the ancient Sumerian city-state where some of the oldest known documents have been found. One can see Uruk as perhaps the first document database–and it certainly wasn’t organized relationally.
 
@@ -94,22 +94,22 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
 
 ### Inserting Clojure XML Elements
 
-A simple method is provided to insert `clojure.data.xml.Element`s:
+You can insert `clojure.data.xml.Element`s as content:
 
 ``` clojure
 (with-open [session (uruk/create-session db)]
-  (uruk/insert-element session "/content-factory/newcontent3" (clojure.data.xml/element :foo)))
-
-(with-open [sess (uruk/create-session db)]
-  (uruk/execute-xquery sess "xquery version \"1.0-ml\"; doc(\"/content-factory/newcontent3\")"))
+  (uruk/insert-element session
+                       "/content-factory/newcontent3" ;; uri to insert at
+                       (clojure.data.xml/element :foo)))
 ```
+This function takes an optional map describing document metadata to use during the insert.
 
 ## TODO
   - release on Clojars
   - revise tests for new db connection scheme
   - more tests
   - spec?
-  - ensure insert-content robustly covers needed use cases
+  - ensure insert-element robustly covers needed use cases
   - with-session macro?
 
 ## License
