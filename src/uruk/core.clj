@@ -1,7 +1,8 @@
 (ns uruk.core
   "Marklogic XCC core functions: session management, querying, type
   conversion, transactions."
-  (:require [clojure.data.json :as json]
+  (:require [clojure.set]
+            [clojure.data.json :as json]
             [clojure.data.xml :as xml])
   (:import [java.util.logging Logger]
            [com.marklogic.xcc
@@ -351,12 +352,14 @@
     (when-let [perms (:permissions options)]
       (.setPermissions cco (into-array ContentPermission
                                        (reduce (fn [permissions permission]
-                                                 (conj permissions (ContentPermission. (case (val (first permission))
-                                                                                         :execute ContentCapability/EXECUTE
-                                                                                         :insert  ContentCapability/INSERT
-                                                                                         :read    ContentCapability/READ
-                                                                                         :update  ContentCapability/UPDATE)
-                                                                                       (key (first permission)))))
+                                                 (conj permissions
+                                                       (ContentPermission.
+                                                        (case (val (first permission))
+                                                          :execute ContentCapability/EXECUTE
+                                                          :insert  ContentCapability/INSERT
+                                                          :read    ContentCapability/READ
+                                                          :update  ContentCapability/UPDATE)
+                                                        (key (first permission)))))
                                                []
                                                perms))))
     

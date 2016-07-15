@@ -109,6 +109,8 @@ A simple method is provided to insert `clojure.data.xml.Element`s:
   - revise tests for new db connection scheme
   - more tests
   - spec?
+  - ensure insert-content robustly covers needed use cases
+  - with-session macro?
 
 ## License
 
