@@ -10,7 +10,7 @@ Sponsored by [LambdaWerk](https://lambdawerk.com/home).
 
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
-In your project.clj: `[uruk "0.1.0"]`
+In your `project.clj` dependencies: `[uruk "0.1.0"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
