@@ -113,7 +113,6 @@ You can insert `clojure.data.xml.Element`s as content:
 This function takes an optional map describing document metadata to use during the insert.
 
 ## TODO
-  - revise tests for new db connection scheme
   - more tests
   - spec?
   - ensure insert-element robustly covers needed use cases
