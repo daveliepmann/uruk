@@ -1,6 +1,6 @@
 (defproject uruk "0.1.0"
   :description "Clojure wrapper of MarkLogic XML Content Connector For Java (XCC/J)"
-  :url "http://example.com/FIXME"
+  :url "https://github.com/daveliepmann/uruk"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
