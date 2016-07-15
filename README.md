@@ -8,17 +8,19 @@ Sponsored by [LambdaWerk](https://lambdawerk.com/home).
 
 ## Usage
 
+For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
+
 Basic usage takes the form of:
 ``` clojure
-(with-open [session (create-session {:uri xdbc-uri :content-base database-name
-                                     :user database-user :password database-pwd})]
-  (execute-xquery session xquery-string))
+(with-open [session (uruk/create-session {:uri xdbc-uri :content-base database-name
+                                          :user database-user :password database-pwd})]
+  (uruk/execute-xquery session xquery-string))
 ```
 ...of which a concrete example is:
 ``` clojure
-(with-open [session (create-session {:uri "xdbc://localhost:8383/"
-                                     :user "rest-writer" :password "password"})]
-  (execute-xquery session "\"hello world\""))
+(with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
+                                          :user "rest-writer" :password "password"})]
+  (uruk/execute-xquery session "\"hello world\""))
 ```
 ...which in this case should return `"hello world"` (if you provide valid credentials).
 
@@ -32,16 +34,16 @@ Let's `def` our database information for concision's sake:
 ### Types
 Basic type conversion is performed automatically for most [XCC types](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html). If for some reason you need access to the raw results, pass `:raw` to the optional typed parameter `:types`, like so, using the database info we just defined:
 ``` clojure
-(with-open [session (create-session db)]
-  (execute-xquery session "\"hello world\"" :types :raw))
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "\"hello world\"" :types :raw))
 
 => #object[com.marklogic.xcc.impl.CachedResultSequence 0x2c034c22 "CachedResultSequence: size=1, closed=false, cursor=-1"]
 ```
 
 This lets you inspect result types with `result-type`:
 ``` clojure
-(with-open [session (create-session db)]
-  (result-type (execute-xquery session "\"hello world\"" :types :raw)))
+(with-open [session (uruk/create-session db)]
+  (uruk/result-type (uruk/execute-xquery session "\"hello world\"" :types :raw)))
 
 => "xs:string"
 ```
@@ -49,10 +51,10 @@ This lets you inspect result types with `result-type`:
 Those result types form the keys to the `types` map, whose values are functions used to transform result items into more manageable Clojure types. For most types that’s as simple as `"document-node()" #(.asString %)` (for XdmDocuments) or reading the number contained in a string. But if you need more in-depth handling of results, you can override the default mappings–a la carte!–by passing a map to the aforementioned `types` parameter, like so:
 
 ``` clojure
-(with-open [session (create-session db)]
-  (execute-xquery session
-                  "xquery version \"1.0-ml\"; doc('/dir/unwieldy.xml')"
-                  :types {"document-node()" #(custom-function %)}))
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session
+                       "xquery version \"1.0-ml\"; doc('/dir/unwieldy.xml')"
+                       :types {"document-node()" #(custom-function %)}))
 ```
 
 ### Transactions
@@ -66,28 +68,28 @@ Multiple database updates that must occur together can take advantage of transac
 We translate the original Java to Clojure, taking advantage of Clojure’s `with-open` idiom:
 
 ``` clojure
-(with-open [session (create-session db {:transaction-mode :update})]
+(with-open [session (uruk/create-session db {:transaction-mode :update})]
   ;; The first request (query) starts a new, multi-statement transaction:
-  (execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
+  (uruk/execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
   
   ;; This second request executes in the same transaction as the
   ;; previous request and sees the results of the previous update:
-  (execute-xquery session "xdmp:document-insert('/docs/mst2.xml', fn:doc(\"/docs/mst1.xml\"));)")
+  (uruk/execute-xquery session "xdmp:document-insert('/docs/mst2.xml', fn:doc(\"/docs/mst1.xml\"));")
   
   ;; After commit, updates are visible to other transactions. Commit
   ;; ends the transaction after current statement completes.
-  (commit session) ;; <—- Transaction ends; updates are kept
+  (uruk/commit session) ;; <—- Transaction ends; updates are kept
 
   ;; Rollback discards changes and ends the transaction. The following
   ;; document deletion query never occurs, since it is rolled back
   ;; before calling commit:
-  (execute-xquery session "xdmp:document-delete('/docs/mst1.xml')")
-  (rollback session) ;; <– Transaction ends; updates are lost
+  (uruk/execute-xquery session "xdmp:document-delete('/docs/mst1.xml')")
+  (uruk/rollback session) ;; <– Transaction ends; updates are lost
   
   ;; Closing session without calling commit causes a rollback. The
   ;; following update is lost, since we don't commit before the end of
   ;; the (with-open) and its implicit `.close`:
-  (execute-xquery session "xdmp:document-delete('/docs/mst1.xml')"))
+  (uruk/execute-xquery session "xdmp:document-delete('/docs/mst1.xml')"))
 ```
 
 ### Inserting Clojure XML Elements
@@ -95,16 +97,15 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
 A simple method is provided to insert `clojure.data.xml.Element`s:
 
 ``` clojure
-(with-open [session (create-session db)]
-  (insert-element session "/content-factory/newcontent3" (clojure.data.xml/element :foo)))
+(with-open [session (uruk/create-session db)]
+  (uruk/insert-element session "/content-factory/newcontent3" (clojure.data.xml/element :foo)))
 
-(with-open [sess (create-session db)]
-  (execute-xquery sess "xquery version \"1.0-ml\"; doc(\"/content-factory/newcontent3\")"))
+(with-open [sess (uruk/create-session db)]
+  (uruk/execute-xquery sess "xquery version \"1.0-ml\"; doc(\"/content-factory/newcontent3\")"))
 ```
 
 ## TODO
   - release on Clojars
-  - revise README examples to `:require` and alias core rather than `:refer :all`
   - revise tests for new db connection scheme
   - more tests
   - spec?
