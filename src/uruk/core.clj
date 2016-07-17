@@ -280,19 +280,23 @@
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
-  connection defined by the given session. Apply request options or
-  variables if given. Applies default type conversion, overridden by
-  `types` map if given."
-  [session query & [{:keys [options variables types]}]]
-  (submit-request (.newAdhocQuery session query) session query options variables types))
+  connection defined by the given session. Takes an optional map
+  describing request `options`, `variables`, and overrides of default
+  type conversion in `types`."
+  ([session query]
+   (execute-xquery session query {}))
+  ([session query [{:keys [options variables types]}]]
+   (submit-request (.newAdhocQuery session query) session query options variables types)))
 
 (defn execute-module
   "Execute the named module as a request to the database connection
-  defined by the given session. Apply request options or variables if
-  given. Applies default type conversion, overridden by `types` map if
-  given."
-  [session module & [{:keys [options variables types]}]]
-  (submit-request (.newModuleInvoke session module) session module options variables types))
+  defined by the given session. Takes an optional map describing
+  request `options`, `variables`, and overrides of default type
+  conversion in `types`."
+  ([session module]
+   (execute-module session module {}))
+  ([session module {:keys [options variables types]}]
+   (submit-request (.newModuleInvoke session module) session module options variables types)))
 
 ;;;;;
 
