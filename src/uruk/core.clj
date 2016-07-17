@@ -269,6 +269,8 @@
   (let [ro      (request-options options)
         request (reduce-kv (fn [acc vname vval]
                              (.setNewVariable acc (name vname)
+                                              ;; TODO handle other variable types
+                                              ;; XXX see com.marklogic.xcc.examples.ModuleRunner for example of XS_DOCUMENT type
                                               ValueType/XS_STRING (str vval))
                              acc)
                            (doto request-factory (.setOptions ro))
