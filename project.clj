@@ -1,4 +1,4 @@
-(defproject uruk "0.1.0"
+(defproject uruk "0.2.0-SNAPSHOT"
   :description "Clojure wrapper of MarkLogic XML Content Connector For Java (XCC/J)"
   :url "https://github.com/daveliepmann/uruk"
   :license {:name "Eclipse Public License"
