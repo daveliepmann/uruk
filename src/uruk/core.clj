@@ -35,6 +35,12 @@
   [java-json]
   (json/read-str (.toString (.asJsonNode java-json))))
 
+(defn xdm-var->str
+  "Returns a String representation of the given XDM variable"
+  [xdm-var]
+  (hash-map (.toString (.getName xdm-var))
+            (.toString (.getValue xdm-var))))
+
 (def types
   "Default mapping from MarkLogic XCC types (e.g. those that might be
   returned in a query's result set) to Clojure functions intended to
@@ -65,8 +71,7 @@
    "element()" #(.asString %) ;; XdmElement
    ;; XdmItem TODO
    "text()" #(.asString %) ;; XdmText
-   "variable()" #(hash-map (.toString (.getName %))
-                           (.asString (.getValue %))) ;; XdmVariable -- XXX unknown if the key used matches getValueType
+   "variable()" xdm-var->str ;; XdmVariable -- XXX unknown if the key used matches getValueType
 
    "xs:anyURI" str
    "xs:base64Binary" #(.asBinaryData %) ;; XSBase64Binary
@@ -146,7 +151,7 @@
     :timeout-millis
     :timezone})
 
-(defn- request-options
+(defn request-options
   "Creates a Request Options object (to pass to a Request or a
   Session) out of the given options map. See `valid-request-options`
   for supported keywords."
@@ -257,8 +262,9 @@
 (defn submit-request
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
-  with (possibly empty) `options` and `variables` maps. Applies type
-  conversion according to defaults and `types`."
+  with (possibly empty) `options` and (String) `variables`
+  maps. Applies type conversion to response according to defaults and
+  `types`."
   [request-factory session query options variables types]
   (let [ro      (request-options options)
         request (reduce-kv (fn [acc vname vval]
@@ -266,7 +272,7 @@
                                               ValueType/XS_STRING (str vval))
                              acc)
                            (doto request-factory (.setOptions ro))
-                           options)]
+                           variables)]
     (cond (= :raw types) (.submitRequest session request)
           :else (convert-types (.submitRequest session request) types))))
 
