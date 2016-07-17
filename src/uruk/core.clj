@@ -275,7 +275,7 @@
   connection defined by the given session. Apply request options or
   variables if given. Applies default type conversion, overridden by
   `types` map if given."
-  [session query & {:keys [options variables types]}]
+  [session query & [{:keys [options variables types]}]]
   (submit-request (.newAdhocQuery session query) session query options variables types))
 
 (defn execute-module
@@ -283,7 +283,7 @@
   defined by the given session. Apply request options or variables if
   given. Applies default type conversion, overridden by `types` map if
   given."
-  [session module & {:keys [options variables types]}]
+  [session module & [{:keys [options variables types]}]]
   (submit-request (.newModuleInvoke session module) session module options variables types))
 
 ;;;;;
