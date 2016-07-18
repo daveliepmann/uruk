@@ -3,8 +3,9 @@
   conversion, transactions."
   (:require [clojure.set]
             [clojure.data.json :as json]
-            [clojure.data.xml :as xml])
-  (:import [java.util.logging Logger]
+            [clojure.data.xml :as xml]
+            [slingshot.slingshot :as sling])
+  (:import [java.util.logging Logger] ;; XXX can this be omitted?
            [com.marklogic.xcc
             Session$TransactionMode
             RequestOptions
@@ -275,9 +276,10 @@
                              acc)
                            (doto request-factory (.setOptions ro))
                            variables)]
-    (let [req (try (.submitRequest session request)
-                   (catch Exception e
-                     (throw (Exception. (.toString e) e))))]
+    (let [req (sling/try+ (.submitRequest session request)
+                          (catch Exception e ;; XXX specifically XQueryException?
+                            (sling/throw+ (doto (Exception. (.toString e))
+                                            (.setStackTrace (:stack-trace &throw-context))))))]
       (cond (= :raw types) req
             :else          (convert-types req types)))))
 

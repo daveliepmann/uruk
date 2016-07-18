@@ -8,5 +8,6 @@
                  ;; required but not included by MarkLogic (e.g. for ContentFactory):
                  [com.fasterxml.jackson.core/jackson-databind "2.6.3"]
                  [org.clojure/data.json "0.2.6"]
-                 [org.clojure/data.xml "0.0.8"]]
+                 [org.clojure/data.xml "0.0.8"]
+                 [slingshot "0.12.2"]]
   :repositories [["MarkLogic-releases" "http://developer.marklogic.com/maven2"]])
