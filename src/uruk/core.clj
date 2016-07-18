@@ -275,8 +275,11 @@
                              acc)
                            (doto request-factory (.setOptions ro))
                            variables)]
-    (cond (= :raw types) (.submitRequest session request)
-          :else (convert-types (.submitRequest session request) types))))
+    (let [req (try (.submitRequest session request)
+                   (catch Exception e
+                     (throw (Exception. (.toString e) e))))]
+      (cond (= :raw types) req
+            :else          (convert-types req types)))))
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
