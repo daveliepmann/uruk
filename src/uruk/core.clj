@@ -48,12 +48,12 @@
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html"
   {"array-node()" java-json->clj-json ;; ArrayNode
    "boolean-node()" #(.asBoolean %)  ;; BooleanNode
-   
+
    "cts:box" #(.asString %) ;; would be nice to convert box to seq of 4 numbers, unless that is disrupted by other element types
    "cts:circle" #(.asString %)
    "cts:point" #(.asString %)
    "cts:polygon" #(.asString %)
-   
+
    "json:array" java-json->clj-json ;; JSArray
    "json:object" java-json->clj-json ;; JSObject
 
@@ -110,7 +110,7 @@
   overridden (in part or in whole) with the optional parameter
   `type-mapping`, which should contain a transformation function keyed
   by an XCC type string. See `types` above."
-  [result-sequence & [type-mapping]] 
+  [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
   (let [result (map (fn [item] (((merge types
                                        (when (map? type-mapping)
@@ -169,7 +169,7 @@
     ;; TODO A macro might be useful to replace the chain of when-lets with use-once variable names
     (when-let [epit (:effective-point-in-time options)]
       (.setEffectivePointInTime request (BigInteger. (str epit))))
-    
+
     (when-let [locale (:locale options)]
       (.setLocale request locale)) ;; TODO enforce Locale object?
     (when-let [mar (:max-auto-retry options)]
@@ -178,7 +178,7 @@
       (.setQueryLanguage request ql))
     (when-let [rn (:request-name options)]
       (.setRequestName request rn))
-    
+
     (when-let [rtl (:request-time-limit options)]
       (.setRequestTimeLimit request rtl))
     (when-let [rbs (:result-buffer-size options)]
@@ -285,7 +285,7 @@
   type conversion in `types`."
   ([session query]
    (execute-xquery session query {}))
-  ([session query [{:keys [options variables types]}]]
+  ([session query {:keys [options variables types]}]
    (submit-request (.newAdhocQuery session query) session query options variables types)))
 
 (defn execute-module
@@ -302,7 +302,7 @@
 
 (def valid-content-creation-options
   "Set of valid creation options for Content objects. See
-  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html" 
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html"
   #{:buffer-size
     :collections
     :encoding
@@ -352,7 +352,7 @@
       (.setEncoding cco e))
     (when-let [f (:format options)]
       (.setFormat cco (doc-format f)))
-    
+
     (when-let [g (:graph options)]
       (.setGraph cco g))
     (when-let [lang (:language options)]
@@ -374,7 +374,7 @@
                                                         (key (first permission)))))
                                                []
                                                perms))))
-    
+
     (when-let [pk (:placement-keys options)]
       (.setPlaceKeys cco pk)) ;; FIXME bigint and long array casts?
     (when-let [q (:quality options)]
@@ -398,7 +398,7 @@
    :graph (.getGraph opts)
    :language (.getLanguage opts)
    :namespace (.getNamespace opts)
-   :permissions (map #(hash-map (.getRole %) (.toString (.getCapability %))) (.getPermissions opts)) 
+   :permissions (map #(hash-map (.getRole %) (.toString (.getCapability %))) (.getPermissions opts))
    :quality (.getQuality opts)
    :repair-level ((clojure.set/map-invert repair-level) (.getRepairLevel opts))
    :resolve-buffer-size (.getResolveBufferSize opts)
@@ -442,7 +442,7 @@
 ;;;; these functions within `with-open` after setting the transaction
 ;;;; mode to `:update` or `:query` on the session via the
 ;;;; `:transaction-mode` option.
-;;;; 
+;;;;
 ;;;; See https://docs.marklogic.com/guide/xcc/concepts#id_23310
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
