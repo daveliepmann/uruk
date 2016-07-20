@@ -261,7 +261,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def variable-types
-  "TODO docstring"
+  "Mapping between Clojure keywords describing XDM Variable types and
+  the Java representations of those types."
   {:array-node ValueType/ARRAY_NODE
    :attribute ValueType/ATTRIBUTE ;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type
    :binary ValueType/BINARY
