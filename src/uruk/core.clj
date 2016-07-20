@@ -113,14 +113,11 @@
   by an XCC type string. See `types` above."
   [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
-  (let [result (map (fn [item] (((merge types
-                                       (when (map? type-mapping)
-                                         type-mapping))
-                                (.toString (.getValueType item))) item))
-                    (.toArray result-sequence))]
-    (if (= 1 (count result))
-      (first result)
-      result)))
+  (map (fn [item] (((merge types
+                          (when (map? type-mapping)
+                            type-mapping))
+                   (.toString (.getValueType item))) item))
+       (.toArray result-sequence)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -260,13 +257,30 @@
 ;;;; Working with sessions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn shape-results
+  "TODO"
+  [server-response shape]
+  (case shape
+    :none   nil
+    ;; TODO burrow down to single result? or leave potential for seq results even with :single?
+    :single (if (sequential? server-response)
+              (first server-response)
+              server-response)
+    :single! (if (> (count server-response) 1)
+               (throw (ex-info ":single! result shape specified, but result size is greater than 1."
+                               {:result server-response}))
+               (if (sequential? server-response)
+                 (first server-response)
+                 server-response))
+    server-response))
+
 (defn submit-request
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
   with (possibly empty) `options` and (String) `variables`
   maps. Applies type conversion to response according to defaults and
   `types`."
-  [request-factory session query options variables types]
+  [request-factory session query options variables types shape]
   (let [ro      (request-options options)
         request (reduce-kv (fn [acc vname vval]
                              (.setNewVariable acc (name vname)
@@ -275,13 +289,14 @@
                                               ValueType/XS_STRING (str vval))
                              acc)
                            (doto request-factory (.setOptions ro))
-                           variables)]
-    (let [req (sling/try+ (.submitRequest session request)
-                          (catch Exception e ;; XXX specifically XQueryException?
-                            (sling/throw+ (doto (Exception. (.toString e))
-                                            (.setStackTrace (:stack-trace &throw-context))))))]
-      (cond (= :raw types) req
-            :else          (convert-types req types)))))
+                           variables)
+        rsp (sling/try+ (.submitRequest session request)
+                        (catch Exception e ;; XXX specifically XQueryException?
+                          (sling/throw+ (doto (Exception. (.toString e))
+                                          (.setStackTrace (:stack-trace &throw-context))))))]
+    (shape-results (cond (= :raw types) rsp
+                         :else          (convert-types rsp types))
+                   shape)))
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
@@ -290,8 +305,9 @@
   type conversion in `types`."
   ([session query]
    (execute-xquery session query {}))
-  ([session query {:keys [options variables types]}]
-   (submit-request (.newAdhocQuery session query) session query options variables types)))
+  ([session query {:keys [options variables types shape]}]
+   (submit-request (.newAdhocQuery session query) session query
+                   options variables types shape)))
 
 (defn execute-module
   "Execute the named module as a request to the database connection
@@ -300,8 +316,9 @@
   conversion in `types`."
   ([session module]
    (execute-module session module {}))
-  ([session module {:keys [options variables types]}]
-   (submit-request (.newModuleInvoke session module) session module options variables types)))
+  ([session module {:keys [options variables types shape]}]
+   (submit-request (.newModuleInvoke session module) session module
+                   options variables types shape)))
 
 ;;;;;
 
