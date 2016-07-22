@@ -397,13 +397,15 @@
 (defn describe-content-creation-options
   [opts]
   {:buffer-size (.getBufferSize opts)
-   :collections (map #(.toString %) (.getCollections opts))
+   :collections (mapv #(.toString %) (.getCollections opts))
    :encoding (.getEncoding opts)
    :format ((clojure.set/map-invert doc-format) (.getFormat opts))
    :graph (.getGraph opts)
    :language (.getLanguage opts)
    :namespace (.getNamespace opts)
-   :permissions (map #(hash-map (.getRole %) (.toString (.getCapability %))) (.getPermissions opts))
+   :permissions (mapv #(hash-map (.getRole %)
+                                 (keyword (.toString (.getCapability %))))
+                      (.getPermissions opts))
    :quality (.getQuality opts)
    :repair-level ((clojure.set/map-invert repair-level) (.getRepairLevel opts))
    :resolve-buffer-size (.getResolveBufferSize opts)
