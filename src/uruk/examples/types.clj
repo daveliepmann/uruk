@@ -193,22 +193,3 @@ fn:subtract-dateTimes-yielding-yearMonthDuration(
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (.close session)
-
-
-(describe-content-creation-options
- (content-creation-options {:buffer-size 400
-                            :collections ["my-collection" "another-collection"]
-                            :encoding "ASCII"
-                            :format :text
-                            :graph "my-graph"
-                            :language "fr"
-                            ;; :locale 
-                            :namespace "my-ns"                            
-                            :permissions [{"such-and-such-role" :insert}
-                                          {"such-and-such-role" :update}]
-                            ;; :placement-keys
-                            :quality 20
-                            :repair-level :full
-                            :resolve-buffer-size 20
-                            :resolve-entities true
-                            :temporal-collection "my-temp"}))
