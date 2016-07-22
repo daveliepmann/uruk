@@ -74,5 +74,14 @@
           (= opts
              (describe-content-creation-options (content-creation-options opts)))))))
 
+;;;;
 
-
+(deftest non-string-variables
+  (testing "Non-string variables passed to request object are not converted to strings"
+    (is (instance? com.marklogic.xcc.types.impl.DocumentImpl
+                   (-> (with-open [session (create-session db)]
+                         (.getVariables (#'uruk.core/request-obj (.newAdhocQuery session "hello world")
+                                                                 nil {:derp {:value "<foo/>"
+                                                                             :type :document}})))
+                       first
+                       .getValue)))))
