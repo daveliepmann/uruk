@@ -362,14 +362,15 @@
   may be passed as a map of Strings or with String names corresponding
   to maps describing the variable using mandatory key `:value` and
   optional keys `:namespace` and `:type`.`"
-  [request-factory session query options variables types]
+  [request-factory session query options variables types shape]
   (let [req (sling/try+ (.submitRequest session
                                         (request-obj request-factory options variables))
                         (catch Exception e ;; XXX specifically XQueryException?
                           (sling/throw+ (doto (Exception. (.toString e))
                                           (.setStackTrace (:stack-trace &throw-context))))))]
-    (cond (= :raw types) req
-          :else          (convert-types req types))))
+    (shape-results (cond (= :raw types) req
+                         :else          (convert-types req types))
+                   shape)))
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
