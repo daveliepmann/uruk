@@ -117,9 +117,11 @@ This function takes an optional map describing document metadata to use during t
 
 ## TODO
   - more tests
-  - spec?
+  - more examples
+  - use clojure.spec?
   - ensure insert-element robustly covers needed use cases
   - with-session macro?
+  - is there MarkLogic facility to automatically parse XQuery for XDM variable types?
 
 ## License
 
