@@ -9,7 +9,7 @@
          :content-base "TutorialDB"})
 
 (deftest session-parms-1
-  (testing "Cannot create session with just URI"
+  (testing "Create session with just URI"
     (is (= "Hello world"
            (let [session (create-session db)]
              (-> session
@@ -18,7 +18,7 @@
                  .asString))))))
 
 (deftest session-parms-2
-  (testing "Cannot create session with URI and content-base"
+  (testing "Create session with URI and content-base"
     (is (= "Hello world"
            (let [session (create-session db)]
              (-> session
@@ -27,7 +27,7 @@
                  .asString))))))
 
 (deftest session-parms-3
-  (testing "Cannot create session with URI, username, password"
+  (testing "Create session with URI, username, password"
     (is (= "Hello world"
            (let [session (create-session db)]
              (-> session
@@ -36,7 +36,7 @@
                  .asString))))))
 
 (deftest session-parms-4
-  (testing "Cannot create session with all non-options parameters"
+  (testing "Create session with all non-options parameters"
     (is (= "Hello world" 
            (let [session (create-session db)]
              (-> session
@@ -47,14 +47,14 @@
 ;;;;
 
 (deftest sample-request-options
-  (testing "Cannot set sample option on request"
+  (testing "Set sample option on request"
     (is (= 6000
            (.getTimeoutMillis (request-options {:timeout-millis 6000}))))))
 
 ;; TODO more
 
 (deftest options-roundtrip
-  (testing "Options failed roundtrip through creation and description"
+  (testing "Round-trip options through creation and description"
     (is (let [opts {:buffer-size 400
                     :collections ["my-collection" "another-collection"]
                     :encoding "ASCII"
