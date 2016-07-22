@@ -316,9 +316,11 @@
 (defn submit-request
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
-  with (possibly empty) `options` and (String) `variables`
-  maps. Applies type conversion to response according to defaults and
-  `types`."
+  with (possibly empty) `options` and `variables` maps. Applies type
+  conversion to response according to defaults and `types`. Variables
+  may be passed as a map of Strings or with String names corresponding
+  to maps describing the variable using mandatory key `:value` and
+  optional keys `:namespace` and `:type`.`"
   [request-factory session query options variables types]
   (let [ro      (request-options options)
         request (reduce-kv (fn [acc vname vval]
@@ -345,7 +347,18 @@
   "Execute the given xquery query as a request to the database
   connection defined by the given session. Takes an optional map
   describing request `options`, `variables`, and overrides of default
-  type conversion in `types`."
+  type conversion in `types`.
+
+  Options passed must be in `valid-request-options` and conform to
+  `request-options`.
+
+  Variables may be passed as a map of Strings or with String names
+  corresponding to maps describing the variable using mandatory key
+  `:value` and optional keys `:namespace` and `:type`.`
+
+  Type conversion overrides must be a map using keys present in
+  `uruk.core/types` and conform to use in `convert-types`, that is,
+  including values which are a function of one variable."
   ([session query]
    (execute-xquery session query {}))
   ([session query {:keys [options variables types]}]
@@ -355,7 +368,18 @@
   "Execute the named module as a request to the database connection
   defined by the given session. Takes an optional map describing
   request `options`, `variables`, and overrides of default type
-  conversion in `types`."
+  conversion in `types`.
+
+  Options passed must be in `valid-request-options` and conform to
+  `request-options`.
+
+  Variables may be passed as a map of Strings or with String names
+  corresponding to maps describing the variable using mandatory key
+  `:value` and optional keys `:namespace` and `:type`.`
+
+  Type conversion overrides must be a map using keys present in
+  `uruk.core/types` and conform to use in `convert-types`, that is,
+  including values which are a function of one variable."
   ([session module]
    (execute-module session module {}))
   ([session module {:keys [options variables types]}]
