@@ -176,20 +176,19 @@
 (execute-xquery session "\"hello world\"")
 
 ;; Time
-(execute-xquery session "fn:current-time()")
+(execute-xquery session "fn:current-time()" {:shape :single!})
 
 ;; Untyped Atomic
 (execute-xquery session "let $x as xs:untypedAtomic*
-:= (xs:untypedAtomic(\"cherry\"),
-                    xs:untypedAtomic(\"1\"),
-                    xs:untypedAtomic(\"1\"))
-return fn:distinct-values ($x)")
+                           := (xs:untypedAtomic(\"cherry\"),
+                               xs:untypedAtomic(\"1\"),
+                               xs:untypedAtomic(\"1\"))
+                         return fn:distinct-values ($x)")
 
 ;; YearMonthDuration
 (execute-xquery session "xquery version \"0.9-ml\"
-fn:subtract-dateTimes-yielding-yearMonthDuration(
-                                                 fn:current-dateTime(),
-                                                 xs:dateTime(\"2000-01-11T12:01:00.000Z\"))")
+                         fn:subtract-dateTimes-yielding-yearMonthDuration(fn:current-dateTime(), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
+                {:shape :single})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
