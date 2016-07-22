@@ -258,7 +258,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn shape-results
-  "TODO"
+  "Coerces the server's MarkLogic query response to the (possibly
+  `nil`) `shape` that the client would like the response to take. By
+  default, returns the unchanged server response.
+
+  Recognized shapes include:
+  :none - ignore the response
+  :single - return just the first element of the response
+  :single! - if the response is one element, return just that element;
+  if not (i.e. if the response is more than one element) throw an
+  error"
   [server-response shape]
   (case shape
     :none   nil
