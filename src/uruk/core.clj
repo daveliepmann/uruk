@@ -257,37 +257,113 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Working with sessions
+;;;; Queries
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def variable-types
+  "Mapping between Clojure keywords describing XDM Variable types and
+  the Java representations of those types."
+  {:array-node ValueType/ARRAY_NODE
+   :attribute ValueType/ATTRIBUTE ;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type
+   :binary ValueType/BINARY
+   :boolean-node ValueType/BOOLEAN_NODE
+   :comment ValueType/COMMENT ;; FIXME if passed as variable :type, causes: com.marklogic.xcc.exceptions.XQueryException: XDMP-LEXVAL: xs:QName("comment()") -- Invalid lexical value "comment()" 
+   :cts-box ValueType/CTS_BOX
+   :cts-circle ValueType/CTS_CIRCLE
+   :cts-point ValueType/CTS_POINT
+   :cts-polygon ValueType/CTS_POLYGON
+
+   :document ValueType/DOCUMENT
+   :element ValueType/ELEMENT
+   :js-array ValueType/JS_ARRAY
+   :js-object ValueType/JS_OBJECT
+   :node ValueType/NODE
+   :null-node ValueType/NULL_NODE
+   :number-node ValueType/NUMBER_NODE
+   :object-node ValueType/OBJECT_NODE
+   :processing-instruction ValueType/PROCESSING_INSTRUCTION
+   :sequence ValueType/SEQUENCE
+   :text ValueType/TEXT ;; FIXME causes XDMP-LEXVAL
+
+   :xs-any-uri ValueType/XS_ANY_URI
+   :xs-base64-binary ValueType/XS_BASE64_BINARY
+   :xs-boolean ValueType/XS_BOOLEAN
+   :xs-date ValueType/XS_DATE
+   :xs-date-time ValueType/XS_DATE_TIME
+   :xs-day-time-duration ValueType/XS_DAY_TIME_DURATION
+   :xs-decimal ValueType/XS_DECIMAL
+   :xs-double ValueType/XS_DOUBLE
+   :xs-duration ValueType/XS_DURATION
+   :xs-float ValueType/XS_FLOAT
+
+   :xs-gday ValueType/XS_GDAY
+   :xs-gmonth ValueType/XS_GMONTH
+   :xs-gmonth-day ValueType/XS_GMONTH_DAY
+   :xs-gyear ValueType/XS_GYEAR
+   :xs-gyear-month ValueType/XS_GYEAR_MONTH
+
+   :xs-hex-binary ValueType/XS_HEX_BINARY
+   :xs-integer ValueType/XS_INTEGER
+   :xs-qname ValueType/XS_QNAME
+   :xs-string ValueType/XS_STRING
+   :xs-time ValueType/XS_TIME
+   :xs-untyped-atomic ValueType/XS_UNTYPED_ATOMIC
+   :xs-year-month-duration ValueType/XS_YEAR_MONTH_DURATION
+
+   ;; default:
+   nil ValueType/XS_STRING})
+
+(defn- request-obj
+  "Build a Request object using the given `request-factory` builder,
+  request `options`, and bindings for XQuery external `variables`."
+  [request-factory options variables]
+  (reduce-kv (fn [acc vname vval]
+               (if (string? vval)
+                 (.setNewVariable acc (name vname)
+                                  ValueType/XS_STRING vval)
+                 (let [{:keys [namespace type value]} vval]
+                   (if (string? namespace)
+                     (.setNewVariable acc (name vname) namespace
+                                      (variable-types type) value)
+                     (.setNewVariable acc (name vname)
+                                      (variable-types type) value))))
+               acc)
+             (doto request-factory (.setOptions (request-options options)))
+             variables))
 
 (defn submit-request
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
-  with (possibly empty) `options` and (String) `variables`
-  maps. Applies type conversion to response according to defaults and
-  `types`."
+  with (possibly empty) `options` and `variables` maps. Applies type
+  conversion to response according to defaults and `types`. Variables
+  may be passed as a map of Strings or with String names corresponding
+  to maps describing the variable using mandatory key `:value` and
+  optional keys `:namespace` and `:type`.`"
   [request-factory session query options variables types]
-  (let [ro      (request-options options)
-        request (reduce-kv (fn [acc vname vval]
-                             (.setNewVariable acc (name vname)
-                                              ;; TODO handle other variable types
-                                              ;; XXX see com.marklogic.xcc.examples.ModuleRunner for example of XS_DOCUMENT type
-                                              ValueType/XS_STRING (str vval))
-                             acc)
-                           (doto request-factory (.setOptions ro))
-                           variables)]
-    (let [req (sling/try+ (.submitRequest session request)
-                          (catch Exception e ;; XXX specifically XQueryException?
-                            (sling/throw+ (doto (Exception. (.toString e))
-                                            (.setStackTrace (:stack-trace &throw-context))))))]
-      (cond (= :raw types) req
-            :else          (convert-types req types)))))
+  (let [req (sling/try+ (.submitRequest session
+                                        (request-obj request-factory options variables))
+                        (catch Exception e ;; XXX specifically XQueryException?
+                          (sling/throw+ (doto (Exception. (.toString e))
+                                          (.setStackTrace (:stack-trace &throw-context))))))]
+    (cond (= :raw types) req
+          :else          (convert-types req types))))
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
   connection defined by the given session. Takes an optional map
   describing request `options`, `variables`, and overrides of default
-  type conversion in `types`."
+  type conversion in `types`.
+
+  Options passed must be in `valid-request-options` and conform to
+  `request-options`.
+
+  Variables may be passed as a map of Strings or with String names
+  corresponding to maps describing the variable using mandatory key
+  `:value` and optional keys `:namespace` and `:type`.`
+
+  Type conversion overrides must be a map using keys present in
+  `uruk.core/types` and conform to use in `convert-types`, that is,
+  including values which are a function of one variable."
   ([session query]
    (execute-xquery session query {}))
   ([session query {:keys [options variables types]}]
@@ -297,7 +373,18 @@
   "Execute the named module as a request to the database connection
   defined by the given session. Takes an optional map describing
   request `options`, `variables`, and overrides of default type
-  conversion in `types`."
+  conversion in `types`.
+
+  Options passed must be in `valid-request-options` and conform to
+  `request-options`.
+
+  Variables may be passed as a map of Strings or with String names
+  corresponding to maps describing the variable using mandatory key
+  `:value` and optional keys `:namespace` and `:type`.`
+
+  Type conversion overrides must be a map using keys present in
+  `uruk.core/types` and conform to use in `convert-types`, that is,
+  including values which are a function of one variable."
   ([session module]
    (execute-module session module {}))
   ([session module {:keys [options variables types]}]

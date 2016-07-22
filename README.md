@@ -65,6 +65,9 @@ Those result types form the keys to the `types` map, whose values are functions 
                        :types {"document-node()" #(custom-function %)}))
 ```
 
+### Variables
+Queries can be passed XDM variables in addition to Request options. These variables can be passed in one of two ways: as a simple mapping from name keys to String values, or as a map of name keys to maps describing the variable using the keys `:value` (mandatory), `:namespace` (optional), and `:type` (optional). The value for `type` should be a keyword corresponding to a key in `variable-types`, e.g. `:document` for XML documents (`ValueType/DOCUMENT`).
+
 ### Transactions
 
 Multiple database updates that must occur together can take advantage of transactions. To borrow an example from the XCC Developer’s Guide:
