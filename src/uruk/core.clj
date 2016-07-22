@@ -313,6 +313,24 @@
    ;; default:
    nil ValueType/XS_STRING})
 
+(defn- request-obj
+  "Build a Request object using the given `request-factory` builder,
+  request `options`, and bindings for XQuery external `variables`."
+  [request-factory options variables]
+  (reduce-kv (fn [acc vname vval]
+               (if (string? vval)
+                 (.setNewVariable acc (name vname)
+                                  ValueType/XS_STRING vval)
+                 (let [{:keys [namespace type value]} vval]
+                   (if (string? namespace)
+                     (.setNewVariable acc (name vname) namespace
+                                      (variable-types type) value)
+                     (.setNewVariable acc (name vname)
+                                      (variable-types type) value))))
+               acc)
+             (doto request-factory (.setOptions (request-options options)))
+             variables))
+
 (defn submit-request
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
@@ -322,26 +340,13 @@
   to maps describing the variable using mandatory key `:value` and
   optional keys `:namespace` and `:type`.`"
   [request-factory session query options variables types]
-  (let [ro      (request-options options)
-        request (reduce-kv (fn [acc vname vval]
-                             (if (string? vval)
-                               (.setNewVariable acc (name vname)
-                                                ValueType/XS_STRING vval)
-                               (let [{:keys [namespace type value]} vval]
-                                 (if (string? namespace)
-                                   (.setNewVariable acc (name vname) namespace
-                                                    (variable-types type) value)
-                                   (.setNewVariable acc (name vname)
-                                                    (variable-types type) value))))
-                             acc)
-                           (doto request-factory (.setOptions ro))
-                           variables)]
-    (let [req (sling/try+ (.submitRequest session request)
-                          (catch Exception e ;; XXX specifically XQueryException?
-                            (sling/throw+ (doto (Exception. (.toString e))
-                                            (.setStackTrace (:stack-trace &throw-context))))))]
-      (cond (= :raw types) req
-            :else          (convert-types req types)))))
+  (let [req (sling/try+ (.submitRequest session
+                                        (request-obj request-factory options variables))
+                        (catch Exception e ;; XXX specifically XQueryException?
+                          (sling/throw+ (doto (Exception. (.toString e))
+                                          (.setStackTrace (:stack-trace &throw-context))))))]
+    (cond (= :raw types) req
+          :else          (convert-types req types))))
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
