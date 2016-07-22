@@ -3,8 +3,9 @@
   (:require [uruk.core :refer :all]))
 
 (def session
-  (create-session "xdbc://localhost:8383/"
-                  "rest-admin" "x" "TutorialDB" {}))
+  (create-session {:uri "xdbc://localhost:8383/"
+                   :user "rest-admin" :password "x"
+                   :content-base "TutorialDB"}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Interfaces for JSON
