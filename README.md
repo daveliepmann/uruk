@@ -89,8 +89,7 @@ For convenience, specifying `:shape` in the configuration map attempts to mold q
 
 For example, to clean up our simple example from earlier:
 ``` clojure
-(with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
-                                          :user "rest-admin" :password "x"})]
+(with-open [session (uruk/create-session db)]
   (uruk/execute-xquery session "\"hello world\"" {:shape :single}))
 ```
 
@@ -113,25 +112,25 @@ Uruk empowers you to pass XDM variables to your query, through the `:variables` 
 ``` clojure
 (with-open [session (uruk/create-session db)]
   (uruk/execute-xquery session "xquery version \"1.0-ml\";
-                           declare variable $my-variable as xs:string external;
-                           $my-variable"
-                  {:variables {"my-variable" "my-value"}
-                   :shape :single!}))
+                                declare variable $my-variable as xs:string external;
+                                $my-variable"
+                       {:variables {"my-variable" "my-value"}
+                        :shape :single!}))
 ```
 
 If you need a non-XS_STRING variable, then use the more nuanced map-of-variables syntax:
 ``` clojure
 (with-open [session (uruk/create-session db)]
   (uruk/execute-xquery session "xquery version \"1.0-ml\";
-                           declare variable $my-variable as xs:integer external;
-                           $my-variable"
-                  {:variables {"my-variable" {:value 1
-                                              :type :xs-integer}}
-                   :shape :single!}))
+                                declare variable $my-variable as xs:integer external;
+                                $my-variable"
+                       {:variables {"my-variable" {:value 1
+                                                   :type :xs-integer}}
+                        :shape :single!}))
 ```
 The value for `type` should be a keyword corresponding to a key in `variable-types`, e.g. `:document` for XML documents (`ValueType/DOCUMENT`). It defaults to `XS_STRING` if `:type` is not specified. For example, the first simple variables map example above could also be described as `{"my-variable" {:value "my-value"}}`.
 
-This map syntax also accepts a `:namespace` key.
+The variables map syntax also accepts a `:namespace` key.
 
 
 ### Transactions
