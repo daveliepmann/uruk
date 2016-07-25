@@ -365,9 +365,32 @@
   [request-factory session query options variables types shape]
   (let [req (sling/try+ (.submitRequest session
                                         (request-obj request-factory options variables))
-                        ;; XXX which ML exceptions have overridden toString?
-                        (catch com.marklogic.xcc.exceptions.XccException e
-                          (sling/throw+ (doto (Exception. (.toString e))
+                        ;; RequestException and its subclass
+                        ;; XQueryException have overridden toString,
+                        ;; so only those need to be re-thrown with
+                        ;; that info in `message`, otherwise it is
+                        ;; hidden by most Clojure middleware (probably
+                        ;; nrepl, possibly leiningen and cider)
+                        (catch com.marklogic.xcc.exceptions.XQueryException e
+                          (sling/throw+ (doto (com.marklogic.xcc.exceptions.XQueryException.
+                                               ;; See https://github.com/marklogic/xcc-java/blob/master/com/marklogic/xcc/exceptions/XQueryException.java#L63
+                                               (.getRequest e)
+                                               (.getCode e)
+                                               (.getW3CCode e)
+                                               (.getXQueryVersion e)
+                                               (.toString e)
+                                               (.getFormatString e)
+                                               "" ;; FIXME expr - "The expression that caused the exception, if applicable"
+                                               (.isRetryable e)
+                                               (.getData e)
+                                               (.getStack e))
+                                          (.setStackTrace (:stack-trace &throw-context)))))
+                        ;; TODO It could be useful to re-throw other
+                        ;; specific sub-classes of RequestException.
+                        (catch com.marklogic.xcc.exceptions.RequestException e
+                          (sling/throw+ (doto (com.marklogic.xcc.exceptions.RequestException.
+                                               (.toString e)
+                                               (.getRequest e))
                                           (.setStackTrace (:stack-trace &throw-context))))))]
     (shape-results (cond (= :raw types) req
                          :else          (convert-types req types))
