@@ -85,3 +85,19 @@
                                                                              :type :document}})))
                        first
                        .getValue)))))
+
+;;;;
+
+(deftest accept-only-valid-options
+  (testing "Options that don't exist must raise an error"
+    (is (thrown? java.lang.IllegalArgumentException
+                 (with-open [sess (create-session db)]
+                   (execute-xquery sess "\"hello world\"" {:options {:reuqest-time-limt 500}}))))))
+
+(deftest error-on-invalid-query
+  (testing "An error must be thrown if MarkLogic is passed an invalid query."
+    (is (thrown? java.lang.Exception
+                 ;; FIXME I'd love to get the original error type
+                 ;; here, e.g. XqueryException
+                 (with-open [sess (create-session db)]
+                   (execute-xquery sess "let $uri := xdmp:get-request-field(\"uri\")returnif"))))))

@@ -365,7 +365,8 @@
   [request-factory session query options variables types shape]
   (let [req (sling/try+ (.submitRequest session
                                         (request-obj request-factory options variables))
-                        (catch Exception e ;; XXX specifically XQueryException?
+                        ;; XXX which ML exceptions have overridden toString?
+                        (catch com.marklogic.xcc.exceptions.XccException e
                           (sling/throw+ (doto (Exception. (.toString e))
                                           (.setStackTrace (:stack-trace &throw-context))))))]
     (shape-results (cond (= :raw types) req
