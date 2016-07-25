@@ -552,7 +552,8 @@
 (defn element->content
   "Given a clojure.data.xml.Element, returns a MarkLogic XCC Content
   object suitable for inserting to a database. Optionally takes a map
-  of content creation options per `content-creation-options`.
+  of content creation options per `content-creation-options`. Defaults
+  to XML-formatted documents.
 
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Content.html
   and https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentFactory.html"
@@ -560,7 +561,8 @@
    (element->content uri element {:format :xml}))
   ([uri element options]
    (ContentFactory/newContent uri (xml/emit-str element)
-                              (content-creation-options options))))
+                              (content-creation-options (merge {:format :xml}
+                                                               options)))))
 
 (defn insert-element
   "Inserts the given clojure.data.xml.Element `element` at the given
