@@ -398,9 +398,10 @@
 
 (defn execute-xquery
   "Execute the given xquery query as a request to the database
-  connection defined by the given session. Takes an optional map
-  describing request `options`, `variables`, and overrides of default
-  type conversion in `types`.
+  connection defined by the given session. Takes an optional
+  configuration map describing request `options` and `variables`,
+  desired `shape` of the result, and overrides of default type
+  conversion in `types`.
 
   Options passed must be in `valid-request-options` and conform to
   `request-options`.
@@ -408,6 +409,10 @@
   Variables may be passed as a map of Strings or with String names
   corresponding to maps describing the variable using mandatory key
   `:value` and optional keys `:namespace` and `:type`.`
+
+  The shape of results is coerced using `shape-results` if the
+  `:shape` key is passed. For example, a value of `:single` will
+  return only the first value.
 
   Type conversion overrides must be a map using keys present in
   `uruk.core/types` and conform to use in `convert-types`, that is,
@@ -420,9 +425,9 @@
 
 (defn execute-module
   "Execute the named module as a request to the database connection
-  defined by the given session. Takes an optional map describing
-  request `options`, `variables`, and overrides of default type
-  conversion in `types`.
+  defined by the given session. Takes an optional configuration map
+  describing request `options` and `variables`, desired `shape` of the
+  result, and overrides of default type conversion in `types`.
 
   Options passed must be in `valid-request-options` and conform to
   `request-options`.
@@ -430,6 +435,10 @@
   Variables may be passed as a map of Strings or with String names
   corresponding to maps describing the variable using mandatory key
   `:value` and optional keys `:namespace` and `:type`.`
+
+  The shape of results is coerced using `shape-results` if the
+  `:shape` key is passed. For example, a value of `:single` will
+  return only the first value.
 
   Type conversion overrides must be a map using keys present in
   `uruk.core/types` and conform to use in `convert-types`, that is,

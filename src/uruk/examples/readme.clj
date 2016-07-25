@@ -11,29 +11,82 @@
 (with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
                                           :user "rest-writer" :password "password"})]
   (uruk/execute-xquery session "\"hello world\""))
-;; => "hello world"
+;; => ("hello world")
 
 ;; DB info
 (def db {:uri "xdbc://localhost:8383/"
          :user "rest-admin" :password "password"
          :content-base "TutorialDB"})
 
+;; Lots of functionality is in the optional config map:
 (with-open [session (uruk/create-session db)]
-  (uruk/execute-xquery session "\"hello world\"" :types :raw))
+  (uruk/execute-xquery session
+                       "xquery version \"1.0-ml\"; doc('/bigdoc.xml')"
+                       {:types :raw
+                        :options {:cache-result false}
+                        :variables {:a "a"}
+                        :shape :single}))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "\"hello world\"" {:types :raw}))
 ;; => #object[com.marklogic.xcc.impl.CachedResultSequence 0x2c034c22 "CachedResultSequence: size=1, closed=false, cursor=-1"]
 
 ;; Inspecting result types with `result-type`
 (with-open [session (uruk/create-session db)]
-  (uruk/result-type (uruk/execute-xquery session "\"hello world\"" :types :raw)))
+  (uruk/result-type (uruk/execute-xquery session "\"hello world\"" {:types :raw})))
 ;; => "xs:string"
 
 ;; Replacing the default type-conversion functions
 (with-open [session (uruk/create-session db)]
   (uruk/execute-xquery session
                        "xquery version \"1.0-ml\"; doc('/dir/unwieldy.xml')"
-                       :types {"document-node()" #(custom-function %)}))
+                       {:types {"document-node()" #(custom-function %)}}))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Shape
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
+                                          :user "rest-admin" :password "x"})]
+  (uruk/execute-xquery session "\"hello world\"" {:shape :single}))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Inserting elements
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; XXX This section is out of order compared to the README, since we
+;; use the inserted document momentarily in the Options section.
+
+;; Insert a document with a Content Creation Option:
+(with-open [session (uruk/create-session db)]
+  (uruk/insert-element session
+                       "/content-factory/new-doc"
+                       (clojure.data.xml/element :foo)
+                       {:quality 2}))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Options
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(with-open [sess (uruk/create-session db)]
+  (uruk/execute-xquery sess "xquery version \"1.0-ml\"; doc('/content-factory/new-doc')"
+                       {:types :raw
+                        :options {:cache-result false}}))
+;; => #object[com.marklogic.xcc.impl.StreamingResultSequence 0x6d7f6 "StreamingResultSequence: closed=true"]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Working within a transaction
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (with-open [session (uruk/create-session db {:transaction-mode :update})]
   ;; The first request (query) starts a new, multi-statement transaction:
   (uruk/execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
@@ -57,9 +110,9 @@
   ;; the (with-open) and its implicit `.close`:
   (uruk/execute-xquery session "xdmp:document-delete('/docs/mst1.xml')"))
 
-;; Inserting Clojure XML elements
+;;;; Inserting Clojure XML elements
 (with-open [session (uruk/create-session db)]
-  (uruk/insert-element session "/content-factory/newcontent3" (clojure.data.xml/element :foo)))
+  (uruk/insert-element session "/content-factory/new-doc" (clojure.data.xml/element :foo)))
 
 (with-open [sess (uruk/create-session db)]
-  (uruk/execute-xquery sess "xquery version \"1.0-ml\"; doc(\"/content-factory/newcontent3\")"))
+  (uruk/execute-xquery sess "xquery version \"1.0-ml\"; doc(\"/content-factory/new-doc\")"))
