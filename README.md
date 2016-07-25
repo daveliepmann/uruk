@@ -182,11 +182,11 @@ You can insert `clojure.data.xml.Element`s as content:
 This function takes an optional map describing document metadata, including Content Creation Options to use during the insert. For example:
 
 ``` clojure
-(with-open [session (create-session db)]
-  (insert-element session
-                  "/content-factory/another-new-doc"
-                  (clojure.data.xml/element :bar)
-                  {:quality 2}))
+(with-open [session (uruk/create-session db)]
+  (uruk/insert-element session
+                       "/content-factory/another-new-doc"
+                       (clojure.data.xml/element :bar)
+                       {:quality 2}))
 ```
 See `uruk.core/valid-content-creation-options`, which is a Clojurey version of the possibilities described by [ContentCreateOptions](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html).
 
