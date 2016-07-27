@@ -86,6 +86,18 @@
                        first
                        .getValue)))))
 
+(deftest as-is-boolean-variable
+  (testing "Clojure booleans automatically convert to correct XdmVariable type"
+    (is (false? (with-open [session (create-session db)]
+                  (execute-xquery session "xquery version \"1.0-ml\";
+                                declare variable $my-variable as boolean-node() external;
+                                $my-variable"
+                                  {:variables {"my-variable" {:value false
+                                                              :type :boolean-node}}
+                                   :shape :single!}))))))
+
+;; TODO more
+
 ;;;;
 
 (deftest accept-only-valid-options

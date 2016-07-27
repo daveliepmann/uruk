@@ -128,8 +128,32 @@ If you need a non-XS_STRING variable, then use the more nuanced map-of-variables
                                                    :type :xs-integer}}
                         :shape :single!}))
 ```
-The value for `type` should be a keyword corresponding to a key in `variable-types`, e.g. `:document` for XML documents (`ValueType/DOCUMENT`). It defaults to `XS_STRING` if `:type` is not specified. For example, the first simple variables map example above could also be described as `{"my-variable" {:value "my-value"}}`.
+The value for `type` should be a keyword corresponding to a key in `variable-types`, e.g. `:document` for XML documents (`ValueType/DOCUMENT`). It defaults to `XS_STRING` if `:type` is not specified. For example, the first simple variables map example above could also be described as `{"my-variable" {:value "my-value"}}`. 
 
+Depending on the XdmValue type, conversion of expected Clojure values is automatic, for instance with this [*booleanNode*](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/BooleanNode.html):
+``` clojure
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "xquery version \"1.0-ml\";
+                                declare variable $my-variable as boolean-node() external;
+                                $my-variable"
+                       {:variables {"my-variable" {:value false
+                                                   :type :boolean-node}}
+                        :shape :single!}))
+```
+
+See `uruk/wrap-val` for which values are converted and what they expect. If you need to override those conversions, set the `:as-is?` key to `true` inside the map describing the variable. This puts the onus of producing the correct object on you. For instance, if we were to set `:as-is?` for that `booleanNode`:
+``` clojure
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "xquery version \"1.0-ml\";
+                           declare variable $my-variable as boolean-node() external;
+                           $my-variable"
+                       {:variables {"my-variable" {:value (-> (com.fasterxml.jackson.databind.node.JsonNodeFactory/instance)
+                                                              (.booleanNode false)
+                                                              ValueFactory/newBooleanNode)
+                                                   :type :boolean-node
+                                                   :as-is? true}}
+                        :shape :single!}))
+```
 The variables map syntax also accepts a `:namespace` key.
 
 

@@ -1,6 +1,7 @@
 (ns uruk.examples.readme
   "Examples from and for the README"
-  (:require [uruk.core :as uruk]))
+  (:require [uruk.core :as uruk])
+  (:import [com.marklogic.xcc ValueFactory]))
 
 ;; Basic usage
 (with-open [session (uruk/create-session {:uri xdbc-uri :content-base database-name
@@ -82,6 +83,50 @@
                        {:types :raw
                         :options {:cache-result false}}))
 ;; => #object[com.marklogic.xcc.impl.StreamingResultSequence 0x6d7f6 "StreamingResultSequence: closed=true"]
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Variables
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Simple XS_STRING variables:
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "xquery version \"1.0-ml\";
+                                declare variable $my-variable as xs:string external;
+                                $my-variable"
+                       {:variables {"my-variable" "my-value"}
+                        :shape :single!}))
+
+;; Or use maps describing the variable:
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "xquery version \"1.0-ml\";
+                                declare variable $my-variable as xs:integer external;
+                                $my-variable"
+                       {:variables {"my-variable" {:value 1
+                                                   :type :xs-integer}}
+                        :shape :single!}))
+
+;; Automatic wrapping/conversion of many variable types:
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "xquery version \"1.0-ml\";
+                                declare variable $my-variable as boolean-node() external;
+                                $my-variable"
+                       {:variables {"my-variable" {:value false
+                                                   :type :boolean-node}}
+                        :shape :single!}))
+
+;; As-is:
+(with-open [session (uruk/create-session db)]
+  (uruk/execute-xquery session "xquery version \"1.0-ml\";
+                           declare variable $my-variable as boolean-node() external;
+                           $my-variable"
+                       {:variables {"my-variable" {:value (-> (com.fasterxml.jackson.databind.node.JsonNodeFactory/instance)
+                                                              (.booleanNode false)
+                                                              ValueFactory/newBooleanNode)
+                                                   :type :boolean-node
+                                                   :as-is? true}}
+                        :shape :single!}))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Working within a transaction

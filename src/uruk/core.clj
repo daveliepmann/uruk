@@ -11,7 +11,8 @@
             RequestOptions
             ContentCreateOptions ContentPermission ContentCapability
             ContentSourceFactory ContentFactory
-            DocumentFormat DocumentRepairLevel]
+            DocumentFormat DocumentRepairLevel
+            ValueFactory]
            [com.marklogic.xcc.types ValueType]
            java.net.URI))
 
@@ -296,7 +297,7 @@
    :cts-point ValueType/CTS_POINT
    :cts-polygon ValueType/CTS_POLYGON
 
-   :document ValueType/DOCUMENT
+   :document ValueType/DOCUMENT ;; XXX document-node, really
    :element ValueType/ELEMENT
    :js-array ValueType/JS_ARRAY
    :js-object ValueType/JS_OBJECT
@@ -336,6 +337,75 @@
    ;; default:
    nil ValueType/XS_STRING})
 
+(defn wrap-val
+  "Given a Clojure value, returns a value in a type appropriate for a
+  MarkLogic XdmVariable."
+  [clj-val type]
+  (case type
+    :array-node (ValueFactory/newArrayNode (json/write-str clj-val))
+    :boolean-node (-> (com.fasterxml.jackson.databind.node.JsonNodeFactory/instance)
+                      (.booleanNode clj-val)
+                      ValueFactory/newBooleanNode)
+    :attribute clj-val ;; doesn't seem to be implemented by ValueFactory: "java.lang.InternalError Unrecognized valueType: attribute()"
+    :binary clj-val ;; TODO
+    :comment clj-val ;; TODO
+
+    :cts-box (str clj-val) ;; 4-element sequence or String
+    :cts-circle (let [[radius [latitude longitude]] clj-val]
+                  (.asString (ValueFactory/newCtsCircle (str radius)
+                                                        (ValueFactory/newCtsPoint (str latitude)
+                                                                                  (str longitude)))))
+    :cts-point (str (first clj-val) ","
+                    (second clj-val)) ;; Expects a 2-number sequence
+    :cts-polygon (let [vertices clj-val]
+                   ;; Expects a sequence of 2-element sequences, each
+                   ;; describing successive vertices (points) of the
+                   ;; polygon
+                   (.asString (ValueFactory/newCtsPolygon
+                               (mapv (fn [latitude longitude]
+                                       (ValueFactory/newCtsPoint (str latitude)
+                                                                 (str longitude)))
+                                     vertices))))
+
+    :document clj-val ;; :document-node, really, but we're following ValueType
+    :element clj-val
+    :js-array (ValueFactory/newJSArray (json/write-str clj-val))
+    :js-object (ValueFactory/newJSObject (json/write-str clj-val))
+    :node clj-val
+    :null-node nil
+    :number-node (str clj-val)
+    :object-node (ValueFactory/newObjectNode (json/write-str clj-val))
+    :processing-instruction clj-val ;; TODO
+    :sequence clj-val ;; XXX WONTFIX -- see GitHub issue #8: "com.marklogic.xcc.exceptions.UnimplementedFeatureException - Setting variables that are sequences is not supported"
+    :text clj-val ;; TODO
+
+    :xs-any-uri clj-val ;; TODO
+    :xs-base64-binary clj-val ;; TODO
+    :xs-boolean clj-val
+    :xs-date clj-val ;; TODO
+    :xs-date-time clj-val ;; TODO
+    :xs-day-time-duration clj-val ;; TODO
+    :xs-decimal clj-val
+    :xs-double clj-val
+    :xs-duration clj-val
+    :xs-float clj-val
+
+    :xs-gday clj-val ;; TODO
+    :xs-gmonth clj-val ;; TODO
+    :xs-gmonth-day clj-val ;; TODO
+    :xs-gyear clj-val ;; TODO
+    :xs-gyear-month clj-val ;; TODO
+
+    :xs-hex-binary clj-val ;; TODO
+    :xs-integer clj-val
+    :xs-qname clj-val ;; TODO
+    :xs-string (str clj-val)
+    :xs-time clj-val ;; TODO
+    :xs-untyped-atomic clj-val ;; TODO
+    :xs-year-month-duration clj-val ;; TODO
+
+    clj-val))
+
 (defn- request-obj
   "Build a Request object using the given `request-factory` builder,
   request `options`, and bindings for XQuery external `variables`."
@@ -344,12 +414,15 @@
                (if (string? vval)
                  (.setNewVariable acc (name vname)
                                   ValueType/XS_STRING vval)
-                 (let [{:keys [namespace type value]} vval]
+                 (let [{:keys [namespace type value as-is?]} vval]
                    (if (string? namespace)
                      (.setNewVariable acc (name vname) namespace
                                       (variable-types type) value)
                      (.setNewVariable acc (name vname)
-                                      (variable-types type) value))))
+                                      (variable-types type)
+                                      (if as-is?
+                                        value
+                                        (wrap-val value type))))))
                acc)
              (doto request-factory (.setOptions (request-options options)))
              variables))
