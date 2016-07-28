@@ -370,6 +370,7 @@
     :document clj-val ;; :document-node, really, but we're following ValueType
     :element (cond
                (string? clj-val) clj-val
+               (vector? clj-val) (xml/emit-str (xml/sexp-as-element clj-val))
                (instance? clojure.data.xml.Element clj-val) (xml/emit-str clj-val))
     :js-array (ValueFactory/newJSArray (json/write-str clj-val))
     :js-object (ValueFactory/newJSObject (json/write-str clj-val))
