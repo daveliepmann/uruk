@@ -141,6 +141,8 @@ Depending on the XdmValue type, conversion of expected Clojure values is automat
                         :shape :single!}))
 ```
 
+Of particular interest is that variables that are XML document-nodes or elements can be created by passing either a String representation, a hiccup-style vector, or a `clojure.data.xml.Element`.
+
 See `uruk/wrap-val` for which values are converted and what they expect. If you need to override those conversions, set the `:as-is?` key to `true` inside the map describing the variable. This puts the onus of producing the correct object on you. For instance, if we were to set `:as-is?` for that `booleanNode`:
 ``` clojure
 (with-open [session (uruk/create-session db)]
