@@ -337,6 +337,16 @@
    ;; default:
    nil ValueType/XS_STRING})
 
+(defn ->xml-str
+  "Assumes that its input is valid XML in some format, returning that
+  XML in its String representation. Accepts String, hiccup-style
+  vectors, and clojure.data.xml.Element."
+  [xml]
+  (cond
+    (string? xml) xml
+    (vector? xml) (xml/emit-str (xml/sexp-as-element xml))
+    (instance? clojure.data.xml.Element xml) (xml/emit-str xml)))
+
 (defn wrap-val
   "Given a Clojure value, returns a value in a type appropriate for a
   MarkLogic XdmVariable."
@@ -348,7 +358,7 @@
                       ValueFactory/newBooleanNode)
     :attribute clj-val ;; doesn't seem to be implemented by ValueFactory: "java.lang.InternalError Unrecognized valueType: attribute()"
     :binary clj-val ;; TODO
-    :comment clj-val ;; TODO
+    :comment clj-val ;; TODO, also really :comment-node
 
     :cts-box (str clj-val) ;; 4-element sequence or String
     :cts-circle (let [[radius [latitude longitude]] clj-val]
@@ -367,11 +377,8 @@
                                                                  (str longitude)))
                                      vertices))))
 
-    :document clj-val ;; :document-node, really, but we're following ValueType
-    :element (cond
-               (string? clj-val) clj-val
-               (vector? clj-val) (xml/emit-str (xml/sexp-as-element clj-val))
-               (instance? clojure.data.xml.Element clj-val) (xml/emit-str clj-val))
+    :document (->xml-str clj-val) ;; :document-node, really, but we're following ValueType
+    :element (->xml-str clj-val)
     :js-array (ValueFactory/newJSArray (json/write-str clj-val))
     :js-object (ValueFactory/newJSObject (json/write-str clj-val))
     :node clj-val
@@ -380,7 +387,7 @@
     :object-node (ValueFactory/newObjectNode (json/write-str clj-val))
     :processing-instruction clj-val ;; TODO
     :sequence clj-val ;; XXX WONTFIX -- see GitHub issue #8: "com.marklogic.xcc.exceptions.UnimplementedFeatureException - Setting variables that are sequences is not supported"
-    :text clj-val ;; TODO
+    :text clj-val ;; TODO, also really :text-node
 
     :xs-any-uri clj-val ;; TODO
     :xs-base64-binary clj-val ;; TODO
