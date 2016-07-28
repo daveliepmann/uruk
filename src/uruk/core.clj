@@ -427,7 +427,10 @@
                  (let [{:keys [namespace type value as-is?]} vval]
                    (if (string? namespace)
                      (.setNewVariable acc (name vname) namespace
-                                      (variable-types type) value)
+                                      (variable-types type)
+                                      (if as-is?
+                                        value
+                                        (wrap-val value type)))
                      (.setNewVariable acc (name vname)
                                       (variable-types type)
                                       (if as-is?
