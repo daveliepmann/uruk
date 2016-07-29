@@ -257,6 +257,27 @@
 ;;;; Session management
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn- create-session*
+  "Creates session, given map of database info."
+  [{:keys [uri user password content-base]}]
+  (let [cs (ContentSourceFactory/newContentSource (URI. uri))]
+    (cond
+      (and (nil? content-base)
+           (or (nil? user)
+               (nil? password))) (.newSession cs)
+
+      (and (seq content-base)
+           (or (nil? user)
+               (nil? password))) (.newSession cs content-base)
+
+      (and (seq user)
+           (seq password)
+           (nil? content-base)) (.newSession cs user password)
+
+      (and (seq user)
+           (seq password)
+           (seq content-base)) (.newSession cs user password content-base))))
+
 (defn create-session
   "Create a Session for querying and transacting with. Parameter
   `db-info` describing database connection information must
@@ -271,30 +292,12 @@
   accordingly. See
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html
   for valid options. (Note that request options are distinct from
-  session options, though default request options *can* be set for the
+  session options, though *default* request options can be set for the
   session.)"
-  [db-info & [options]]
-  (let [{:keys [uri user password content-base]} db-info
-        cs (ContentSourceFactory/newContentSource (URI. (:uri db-info)))
-        session (cond
-                  (and (nil? content-base)
-                       (or (nil? user)
-                           (nil? password))) (.newSession cs)
-
-                  (and (seq content-base)
-                       (or (nil? user)
-                           (nil? password))) (.newSession cs content-base)
-
-                  (and (seq user)
-                       (seq password)
-                       (nil? content-base)) (.newSession cs user password)
-
-                  (and (seq user)
-                       (seq password)
-                       (seq content-base)) (.newSession cs user password content-base))]
-    (if (map? options)
-      (configure-session session options)
-      session)))
+  ([db-info]
+   (create-session* db-info))
+  ([db-info {:keys [options]}]
+   (configure-session (create-session* db-info) options)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
