@@ -5,7 +5,7 @@
             [clojure.data.json :as json]
             [clojure.data.xml :as xml]
             [slingshot.slingshot :as sling])
-  (:import [java.util.logging Logger] ;; XXX can this be omitted?
+  (:import [java.util.logging Logger]
            [com.marklogic.xcc
             Session$TransactionMode
             RequestOptions
@@ -290,6 +290,16 @@
        (.setTransactionTimeout session transaction-timeout))
      session)))
 
+(defn session-options
+  "Returns a map describing all options on the given Session object."
+  [session]
+  {:default-request-options (.getDefaultRequestOptions session)
+   :effective-request-options (.getEffectiveRequestOptions session)
+   :logger (.getLogger session)
+   :user-object (.getUserObject session)
+   :transaction-timeout (.getTransactionTimeout session)
+   :transaction-mode ((clojure.set/map-invert transaction-modes)
+                      (.getTransactionMode session))})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Queries

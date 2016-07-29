@@ -1,6 +1,8 @@
 (ns uruk.core-test
   (:require [clojure.test :refer :all]
-            [uruk.core :refer :all]))
+            [uruk.core :refer :all])
+  (:import [java.util.logging Logger]
+           [com.marklogic.xcc RequestOptions]))
 
 ;; FIXME You'll have to fill in database credentials that work for
 ;; your system:
@@ -114,6 +116,36 @@
                  (with-open [sess (create-session db)]
                    (execute-xquery sess "let $uri := xdmp:get-request-field(\"uri\")returnif"))))))
 
-;; TODO complete end-to-end test of all session options
+;;;;
+
+(deftest default-session-options
+  (testing "A session with no explicitly-set options must have default options"
+    (let [sess-opts (session-options (create-session db))]
+      (and (is (instance? RequestOptions (:default-request-options sess-opts)))
+           (is (instance? RequestOptions (:effective-request-options sess-opts)))
+           (is (instance? Logger (:logger sess-opts)))
+           (is (nil? (:user-object sess-opts)))
+           (is (= 0 (:transaction-timeout sess-opts)))
+           (is (nil? (:transaction-mode sess-opts)))))))
+
+(deftest set-session-options
+  (testing "A session with explicitly-set options must reflect those options"
+    (let [sess-opts (session-options
+                     (create-session db
+                                     {:default-request-options {:timeout-millis 75}
+                                      ;; TODO test user-object
+                                      ;; TODO test Logger more deeply
+                                      ;; TODO test default Req Opts more?
+                                      ;; TODO test effective Req Opts more?
+                                      :transaction-timeout 56
+                                      :transaction-mode :query}))]
+      (and (is (= 75
+                  (.getTimeoutMillis (:default-request-options sess-opts))
+                  (.getTimeoutMillis (:effective-request-options sess-opts))))
+           (is (instance? Logger (:logger sess-opts)))
+           (is (empty? (:user-object sess-opts)))
+           (is (= 56 (:transaction-timeout sess-opts)))
+           (is (= :query (:transaction-mode sess-opts)))))))
+
 ;; TODO complete end-to-end test of all request options
 ;; TODO complete end-to-end test of all content creation options
