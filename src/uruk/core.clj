@@ -14,7 +14,58 @@
             DocumentFormat DocumentRepairLevel
             ValueFactory]
            [com.marklogic.xcc.types ValueType]
+           [com.marklogic.xcc Version]
            java.net.URI))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Enumerations and classes.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def version
+  "XCC release number. Auto-generated.
+
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Version.html"
+  {:string (Version/getVersionString)
+   :version-major (Version/getVersionMajor)
+   :version-minor (Version/getVersionMinor)
+   :version-patch (Version/getVersionPatch)})
+
+(def doc-format
+  "Enumeration of allowed document formats. Used at insertion
+  time.
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/DocumentFormat.html"
+  {:xml DocumentFormat/XML
+   :json   DocumentFormat/JSON
+   :text   DocumentFormat/TEXT
+   :none   DocumentFormat/NONE
+   :binary DocumentFormat/BINARY})
+
+(def doc-repair-level
+  "Enumeration of document repair levels. Used at insertion time.
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/DocumentRepairLevel.html"
+  {:default DocumentRepairLevel/DEFAULT
+   :full    DocumentRepairLevel/FULL
+   :none    DocumentRepairLevel/NONE})
+
+(def content-capability
+  "Enumeration of content permission capability values.
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCapability.html"
+  {:execute ContentCapability/EXECUTE
+   :insert  ContentCapability/INSERT
+   :read    ContentCapability/READ
+   :update  ContentCapability/UPDATE})
+
+(def transaction-mode
+  "Enumeration of valid Session transaction modes. See
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.TransactionMode.html"
+  {:auto Session$TransactionMode/AUTO
+   :query Session$TransactionMode/QUERY
+   :update Session$TransactionMode/UPDATE
+   :update-auto-commit Session$TransactionMode/UPDATE_AUTO_COMMIT})
+
+;; For temporary backwards compatibility; TODO remove at next major version change
+(def transaction-modes transaction-mode)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Type conversion
@@ -125,14 +176,6 @@
 ;;;; Helpers for sessions and requests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def transaction-modes
-  "Mapping of keywords for valid Session transaction modes (per
-  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.TransactionMode.html)."
-  {:auto Session$TransactionMode/AUTO
-   :query Session$TransactionMode/QUERY
-   :update Session$TransactionMode/UPDATE
-   :update-auto-commit Session$TransactionMode/UPDATE_AUTO_COMMIT})
-
 (def valid-request-options
   "Set of valid request options for Request objects. Can also be
   passed to Sessions as :default-request-options. See
@@ -204,7 +247,7 @@
   (when-let [uo (:user-object options)]
     (.setUserObject session uo))
   (when-let [tm (:transaction-mode options)]
-    (.setTransactionMode session (transaction-modes tm)))
+    (.setTransactionMode session (transaction-mode tm)))
   (when-let [tt (:transaction-timeout options)]
     (.setTransactionTimeout session tt))
   session)
@@ -560,18 +603,6 @@
     :resolve-entities
     :temporal-collection})
 
-(def doc-format
-  {:xml    DocumentFormat/XML
-   :json   DocumentFormat/JSON
-   :text   DocumentFormat/TEXT
-   :none   DocumentFormat/NONE
-   :binary DocumentFormat/BINARY})
-
-(def repair-level
-  {:default DocumentRepairLevel/DEFAULT
-   :full    DocumentRepairLevel/FULL
-   :none    DocumentRepairLevel/NONE})
-
 (defn content-creation-options
   "Creates a ContentCreateOptions object (to pass to a ContentFactory
   newContent call) out of the given options map. See
@@ -603,21 +634,17 @@
                                        (reduce (fn [permissions permission]
                                                  (conj permissions
                                                        (ContentPermission.
-                                                        (case (val (first permission))
-                                                          :execute ContentCapability/EXECUTE
-                                                          :insert  ContentCapability/INSERT
-                                                          :read    ContentCapability/READ
-                                                          :update  ContentCapability/UPDATE)
+                                                        (content-capability (val (first permission)))
                                                         (key (first permission)))))
                                                []
                                                perms))))
-
+    
     (when-let [pk (:placement-keys options)]
       (.setPlaceKeys cco pk)) ;; FIXME bigint and long array casts?
     (when-let [q (:quality options)]
       (.setQuality cco q))
     (when-let [rl (:repair-level options)]
-      (.setRepairLevel cco (repair-level rl)))
+      (.setRepairLevel cco (doc-repair-level rl)))
     (when-let [rbs (:resolve-buffer-size options)]
       (.setResolveBufferSize cco rbs))
     (when-let [re (:resolve-entities options)]
@@ -639,7 +666,7 @@
                                  (keyword (.toString (.getCapability %))))
                       (.getPermissions opts))
    :quality (.getQuality opts)
-   :repair-level ((clojure.set/map-invert repair-level) (.getRepairLevel opts))
+   :repair-level ((clojure.set/map-invert doc-repair-level) (.getRepairLevel opts))
    :resolve-buffer-size (.getResolveBufferSize opts)
    :resolve-entities (.getResolveEntities opts)
    :temporal-collection (.getTemporalCollection opts)})
