@@ -581,6 +581,17 @@
    (submit-request (.newModuleInvoke session module) session module
                    options variables types shape)))
 
+(defn spawn-module
+  "TODO
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ModuleSpawn.html"
+  ([session module]
+   (spawn-module session module {}))
+  ;; FIXME finish
+  ;; NB, no response handling b/c asynchonous
+  ([session module {:keys [options variables]}]
+   (submit-request (.newModuleSpawn session module) session module
+                   options variables)))
+
 ;;;;;
 
 (def valid-content-creation-options
