@@ -55,16 +55,13 @@
    :read    ContentCapability/READ
    :update  ContentCapability/UPDATE})
 
-(def transaction-mode
+(def transaction-modes
   "Enumeration of valid Session transaction modes. See
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.TransactionMode.html"
   {:auto Session$TransactionMode/AUTO
    :query Session$TransactionMode/QUERY
    :update Session$TransactionMode/UPDATE
    :update-auto-commit Session$TransactionMode/UPDATE_AUTO_COMMIT})
-
-;; For temporary backwards compatibility; TODO remove at next major version change
-(def transaction-modes transaction-mode)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -233,25 +230,6 @@
     ;; TODO test each
     request))
 
-(defn- configure-session
-  "Returns the given Session object, configured according to given
-  options map. Assumes correct types are passed: map
-  for :default-request-options, Logger object for :logger, Object
-  for :user-object, keyword for :transaction-mode, integer
-  for :transaction-timeout."
-  [session options]
-  (when-let [dro (:default-request-options options)]
-    (.setDefaultRequestOptions session (request-options dro)))
-  (when-let [lgr (:logger options)]
-    (.setLogger session lgr))
-  (when-let [uo (:user-object options)]
-    (.setUserObject session uo))
-  (when-let [tm (:transaction-mode options)]
-    (.setTransactionMode session (transaction-mode tm)))
-  (when-let [tt (:transaction-timeout options)]
-    (.setTransactionTimeout session tt))
-  session)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Session management
@@ -296,8 +274,21 @@
   session.)"
   ([db-info]
    (create-session* db-info))
-  ([db-info {:keys [options]}]
-   (configure-session (create-session* db-info) options)))
+  ([db-info {:keys [default-request-options logger user-object
+                    transaction-mode transaction-timeout]}]
+   (let [session (create-session* db-info)]
+     (when (map? default-request-options)
+       (.setDefaultRequestOptions session (request-options default-request-options)))
+     (when (instance? Logger logger)
+       (.setLogger session logger))
+     ;; XXX the following is not the strictest test!
+     (when (instance? Object user-object)
+       (.setUserObject session user-object))
+     (when (keyword? transaction-mode)
+       (.setTransactionMode session (transaction-modes transaction-mode)))
+     (when (integer? transaction-timeout)
+       (.setTransactionTimeout session transaction-timeout))
+     session)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
