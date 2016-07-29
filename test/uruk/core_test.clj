@@ -113,3 +113,7 @@
                  ;; here, e.g. XqueryException
                  (with-open [sess (create-session db)]
                    (execute-xquery sess "let $uri := xdmp:get-request-field(\"uri\")returnif"))))))
+
+;; TODO complete end-to-end test of all session options
+;; TODO complete end-to-end test of all request options
+;; TODO complete end-to-end test of all content creation options
