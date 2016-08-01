@@ -628,45 +628,33 @@
     (when-not (every? valid-content-creation-options (keys options))
       ;; TODO switch to spec
       (throw (IllegalArgumentException. "Invalid content creation option. Keywords passed in `options` must be a subset of `valid-content-creation-options`.")))
-    (when-let [bs (:buffer-size options)]
-      (.setBufferSize cco bs))
-    (when-let [c (:collections options)]
-      (.setCollections cco (into-array String c)))
-    (when-let [e (:encoding options)]
-      (.setEncoding cco e))
-    (when-let [f (:format options)]
-      (.setFormat cco (doc-format f)))
-
-    (when-let [g (:graph options)]
-      (.setGraph cco g))
-    (when-let [lang (:language options)]
-      (.setLanguage cco lang))
-    (when-let [locale (:locale options)]
-      (.setLocale cco locale))
-    (when-let [n (:namespace options)]
-      (.setNamespace cco n))
-    (when-let [perms (:permissions options)]
-      (.setPermissions cco (into-array ContentPermission
-                                       (reduce (fn [permissions permission]
-                                                 (conj permissions
-                                                       (ContentPermission.
-                                                        (content-capability (val (first permission)))
-                                                        (key (first permission)))))
-                                               []
-                                               perms))))
-    
-    (when-let [pk (:placement-keys options)]
-      (.setPlaceKeys cco pk)) ;; FIXME bigint and long array casts?
-    (when-let [q (:quality options)]
-      (.setQuality cco q))
-    (when-let [rl (:repair-level options)]
-      (.setRepairLevel cco (doc-repair-level rl)))
-    (when-let [rbs (:resolve-buffer-size options)]
-      (.setResolveBufferSize cco rbs))
-    (when-let [re (:resolve-entities options)]
-      (.setResolveEntities cco re))
-    (when-let [tc (:temporal-collection options)]
-      (.setTemporalCollection cco tc))
+    (let [xs [[:buffer-size #(.setBufferSize cco %)]
+              [:collections #(.setCollections cco (into-array String %))]
+              [:encoding    #(.setEncoding cco %)]
+              [:format      #(.setFormat cco (doc-format %))]
+              [:graph       #(.setGraph cco %)]
+              [:language    #(.setLanguage cco %)]
+              [:locale      #(.setLocale cco %)]
+              [:namespace   #(.setNamespace cco %)]
+              [:permissions #(.setPermissions
+                              cco
+                              (into-array ContentPermission
+                                          (reduce (fn [permissions permission]
+                                                    (conj permissions
+                                                          (ContentPermission.
+                                                           (content-capability (val (first permission)))
+                                                           (key (first permission)))))
+                                                  []
+                                                  %)))]
+              [:placement-keys #(.setPlaceKeys cco %)]
+              [:quality #(setQuality cco %)]
+              [:repair-level #(.setRepairLevel cco (doc-repair-level %))]
+              [:resolve-buffer-size #(.setResolveBufferSize cco %)]
+              [:resolve-entities #(.setResolveEntities cco %)]
+              [:temporal-collection #(.setTemporalCollection cco %)]]]
+      (doseq [[k fn] xs]
+        (when-let [x (k options)]
+          (f x))))
     cco))
 
 (defn describe-content-creation-options
