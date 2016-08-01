@@ -148,7 +148,7 @@
    "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
    "xs:yearMonthDuration" str})
 
-(defn result-type
+(defn result->type
   "Returns type string of the given query Result object. Currently
   assumes result is homogenous."
   [result]
@@ -492,10 +492,11 @@
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
   with (possibly empty) `options` and `variables` maps. Applies type
-  conversion to response according to defaults and `xcc-type->conv-fn`. Variables
-  may be passed as a map of Strings or with String names corresponding
-  to maps describing the variable using mandatory key `:value` and
-  optional keys `:namespace` and `:type`.`"
+  conversion to response according to defaults and
+  `xcc-type->conv-fn`. Variables may be passed as a map of Strings or
+  with String names corresponding to maps describing the variable
+  using mandatory key `:value` and optional keys `:namespace` and
+  `:type`.`"
   [request-factory session query options variables types shape]
   (let [req (sling/try+ (.submitRequest session
                                         (make-request-obj request-factory options variables))
