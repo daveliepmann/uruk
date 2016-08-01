@@ -619,6 +619,19 @@
     :resolve-entities
     :temporal-collection})
 
+(defn make-content-permissions
+  "Return an array of ContentPermissions decribing the given seq of
+  content capability keys."
+  [permissions]
+  (into-array ContentPermission
+              (reduce (fn [permissions-acc permission]
+                        (conj permissions-acc
+                              (ContentPermission.
+                               (content-capability (val (first permission)))
+                               (key (first permission)))))
+                      []
+                      permissions)))
+
 (defn content-creation-options
   "Creates a ContentCreateOptions object (to pass to a ContentFactory
   newContent call) out of the given options map. See
@@ -626,7 +639,7 @@
   [options]
   (let [cco (ContentCreateOptions.)]
     (when-not (every? valid-content-creation-options (keys options))
-      ;; TODO switch to spec
+      ;; TODO switch to spec?
       (throw (IllegalArgumentException. "Invalid content creation option. Keywords passed in `options` must be a subset of `valid-content-creation-options`.")))
     (let [xs [[:buffer-size #(.setBufferSize cco %)]
               [:collections #(.setCollections cco (into-array String %))]
@@ -636,25 +649,16 @@
               [:language    #(.setLanguage cco %)]
               [:locale      #(.setLocale cco %)]
               [:namespace   #(.setNamespace cco %)]
-              [:permissions #(.setPermissions
-                              cco
-                              (into-array ContentPermission
-                                          (reduce (fn [permissions permission]
-                                                    (conj permissions
-                                                          (ContentPermission.
-                                                           (content-capability (val (first permission)))
-                                                           (key (first permission)))))
-                                                  []
-                                                  %)))]
-              [:placement-keys #(.setPlaceKeys cco %)]
-              [:quality #(setQuality cco %)]
-              [:repair-level #(.setRepairLevel cco (doc-repair-level %))]
+              [:permissions #(.setPermissions cco (make-content-permissions %))]
+              [:placement-keys      #(.setPlaceKeys cco %)]
+              [:quality             #(.setQuality cco %)]
+              [:repair-level        #(.setRepairLevel cco (doc-repair-level %))]
               [:resolve-buffer-size #(.setResolveBufferSize cco %)]
-              [:resolve-entities #(.setResolveEntities cco %)]
+              [:resolve-entities    #(.setResolveEntities cco %)]
               [:temporal-collection #(.setTemporalCollection cco %)]]]
       (doseq [[k fn] xs]
         (when-let [x (k options)]
-          (f x))))
+          (fn x))))
     cco))
 
 (defn describe-content-creation-options
@@ -665,6 +669,7 @@
    :format ((clojure.set/map-invert doc-format) (.getFormat opts))
    :graph (.getGraph opts)
    :language (.getLanguage opts)
+   :locale (.getLocale opts)
    :namespace (.getNamespace opts)
    :permissions (mapv #(hash-map (.getRole %)
                                  (keyword (.toString (.getCapability %))))
