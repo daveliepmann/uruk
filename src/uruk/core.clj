@@ -296,6 +296,7 @@
   {:default-request-options (.getDefaultRequestOptions session)
    :effective-request-options (.getEffectiveRequestOptions session)
    :logger (.getLogger session)
+   :xaresource (.getXAResource session)
    :user-object (.getUserObject session)
    :transaction-timeout (.getTransactionTimeout session)
    :transaction-mode ((clojure.set/map-invert transaction-modes)
