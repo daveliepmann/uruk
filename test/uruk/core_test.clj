@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [uruk.core :refer :all])
   (:import [java.util.logging Logger]
+           [java.util Locale]
            [com.marklogic.xcc RequestOptions]))
 
 ;; FIXME You'll have to fill in database credentials that work for
@@ -63,7 +64,7 @@
                     :format :text
                     :graph "my-graph"
                     :language "fr"
-                    ;; :locale
+                    :locale (Locale. "ru")
                     :namespace "my-ns"
                     :permissions [{"such-and-such-role" :insert}
                                   {"such-and-such-role" :update}]
@@ -110,9 +111,7 @@
 
 (deftest error-on-invalid-query
   (testing "An error must be thrown if MarkLogic is passed an invalid query."
-    (is (thrown? java.lang.Exception
-                 ;; FIXME I'd love to get the original error type
-                 ;; here, e.g. XqueryException
+    (is (thrown? com.marklogic.xcc.exceptions.XQueryException
                  (with-open [sess (create-session db)]
                    (execute-xquery sess "let $uri := xdmp:get-request-field(\"uri\")returnif"))))))
 
