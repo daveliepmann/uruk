@@ -199,35 +199,22 @@
     (when-not (every? valid-request-options (keys options))
       ;; TODO switch to spec
       (throw (IllegalArgumentException. "Invalid request option. Keywords passed in `options` must be a subset of `valid-request-options`.")))
-    (when-let [ardm (:auto-retry-delay-millis options)]
-      (.setAutoRetryDelayMillis request ardm))
-    (when (contains? options :cache-result)
-      (.setCacheResult request (:cache-result options)))
-    (when-let [dxv (:default-xquery-version options)]
-      (.setDefaultXQueryVersion request dxv))
-    ;; TODO A macro might be useful to replace the chain of when-lets with use-once variable names
-    (when-let [epit (:effective-point-in-time options)]
-      (.setEffectivePointInTime request (BigInteger. (str epit))))
-
-    (when-let [locale (:locale options)]
-      (.setLocale request locale)) ;; TODO enforce Locale object?
-    (when-let [mar (:max-auto-retry options)]
-      (.setMaxAutoRetry request (Integer. mar)))
-    (when-let [ql (:query-language options)]
-      (.setQueryLanguage request ql))
-    (when-let [rn (:request-name options)]
-      (.setRequestName request rn))
-
-    (when-let [rtl (:request-time-limit options)]
-      (.setRequestTimeLimit request rtl))
-    (when-let [rbs (:result-buffer-size options)]
-      (.setResultBufferSize request rbs))
-    (when-let [tm (:timeout-millis options)]
-      (.setTimeoutMillis request tm))
-    (when-let [tz (:timezone options)] ;; TODO enforce type?
-      (.setTimeZone request tz))
-    ;; TODO check types of above
-    ;; TODO test each
+    ;; TODO enforce types?
+    (let [xs [[:auto-retry-delay-millis #(.setAutoRetryDelayMillis request %)]
+              [:cache-result            #(.setCacheResult request %)]
+              [:default-xquery-version  #(.setDefaultXQueryVersion request %)]
+              [:effective-point-in-time #(.setEffectivePointInTime request (BigInteger. (str %)))]
+              [:locale                  #(.setLocale request %)] ;; TODO enforce Locale object?
+              [:max-auto-retry          #(.setMaxAutoRetry request (Integer. %))]
+              [:query-language          #(.setQueryLanguage request %)]
+              [:request-name            #(.setRequestName request %)]
+              [:request-time-limit      #(.setRequestTimeLimit request %)]
+              [:result-buffer-size      #(.setResultBufferSize request %)]
+              [:timeout-millis          #(.setTimeoutMillis request %)]
+              [:timezone                #(.setTimeZone request %)]]]
+      (doseq [[k fn] xs]
+        (when (contains? options k)
+          (fn (k options)))))
     request))
 
 

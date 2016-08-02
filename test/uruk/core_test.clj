@@ -49,6 +49,8 @@
 
 ;;;;
 
+;; TODO check that (request-options {:cache-result nil}) doesn't silently get ignored just because the answer might be false!
+
 (deftest sample-request-options
   (testing "Set sample option on request"
     (is (= 6000
