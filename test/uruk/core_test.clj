@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [uruk.core :refer :all])
   (:import [java.util.logging Logger]
+           [java.util Locale]
            [com.marklogic.xcc RequestOptions]))
 
 ;; FIXME You'll have to fill in database credentials that work for
@@ -115,7 +116,7 @@
                     :format :text
                     :graph "my-graph"
                     :language "fr"
-                    ;; :locale
+                    :locale (Locale. "ru")
                     :namespace "my-ns"
                     :permissions [{"such-and-such-role" :insert}
                                   {"such-and-such-role" :update}]
