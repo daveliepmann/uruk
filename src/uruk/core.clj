@@ -6,16 +6,16 @@
             [clojure.data.xml :as xml]
             [slingshot.slingshot :as sling])
   (:import [java.util.logging Logger]
+           java.net.URI
            [com.marklogic.xcc
             Session$TransactionMode
-            RequestOptions
+            RequestOptions SecurityOptions
             ContentCreateOptions ContentPermission ContentCapability
-            ContentSourceFactory ContentFactory
+            ContentSource ContentSourceFactory ContentFactory
             DocumentFormat DocumentRepairLevel
-            ValueFactory]
+            ValueFactory Version]
            [com.marklogic.xcc.types ValueType]
-           [com.marklogic.xcc Version]
-           java.net.URI))
+           [com.marklogic.xcc.spi ConnectionProvider]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Enumerations and classes.
@@ -235,10 +235,76 @@
 ;;;; Session management
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+
+(defn security-options
+  "TODO"
+  ([ssl-context] (security-options ssl-context nil))
+  ([ssl-context {:keys [protocols cipher-suites]}]
+   (let [sec-opts (SecurityOptions. ssl-context)]
+     (when (seq protocols)
+       (.setEnabledProtocols sec-opts (into-array String protocols)))
+     (when (seq cipher-suites)
+       (.setEnabledCipherSuites sec-opts (into-array String cipher-suites)))
+     sec-opts)))
+
+
+(defn uri-content-source
+  "TODO"
+  ([uri] (uri-content-source uri nil))
+  ;; Return a ContentSource object that will serve as the source of
+  ;; connections to the server specified by the given URI.
+  ([uri security-opts]
+   ;; TODO enforce or construct SecurityOptions for security-opts
+   (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                            uri (URI. uri))
+                                          security-opts)))
+
+(defn hosted-content-source
+  "TODO"
+  ([host port]
+   ;; Return a ContentSource object that will serve as the source of
+   ;; connections to the server on the given host and port, with no
+   ;; default login credentials.
+   (ContentSourceFactory/newContentSource host port))
+  ([host port user password]
+   (hosted-content-source host port user password nil nil))
+  ([host port user password content-base]
+   (hosted-content-source host port user password content-base nil))
+
+  ;; Return a ContentSource object that will serve as the source of
+  ;; connections to the server on the given host and port, with login
+  ;; credentials of the given user and password.
+  ([host port user password content-base security-opts]
+   ;; TODO enforce or construct SecurityOptions for security-opts
+   (ContentSourceFactory/newContentSource host port
+                                          user password
+                                          content-base
+                                          security-opts)))
+
+(defn managed-content-source
+  "TODO"
+  [cxn-provider user password content-base]
+  ;; Return a ContentSource object that will use the provided
+  ;; ConnectionProvider instance to obtain server connections, with the
+  ;; given default login credentials and contentbase values.
+  ;; XXX advanced
+  (when-not (instance? ConnectionProvider cxn-provider)
+    (throw (IllegalArgumentException. "Content Source cxn-provider must be a ConnectionProvider")))
+  (ContentSourceFactory/newContentSource cxn-provider
+                                         user password
+                                         content-base))
+
+
+
+
 (defn- create-session*
-  "Creates session, given map of database info."
-  [{:keys [uri user password content-base]}]
-  (let [cs (ContentSourceFactory/newContentSource (URI. uri))]
+  "Creates session, given map of database info. If complex connection
+  options are necessary, pass in a preconfigured content source."
+  [{:keys [uri user password content-base]} & [content-source]]
+  (let [cs (if (instance? ContentSource content-source)
+             content-source
+             (ContentSourceFactory/newContentSource (URI. uri)))]
     (cond
       (and (nil? content-base)
            (or (nil? user)
@@ -257,6 +323,7 @@
            (seq content-base)) (.newSession cs user password content-base))))
 
 (defn create-session
+  ;; TODO document content-source parameter
   "Create a Session for querying and transacting with. Parameter
   `db-info` describing database connection information must
   include :uri key, and may optionally include connection information
@@ -271,12 +338,23 @@
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html
   for valid options. (Note that request options are distinct from
   session options, though *default* request options can be set for the
-  session.)"
+  session.)
+
+  If optional `content-source` is passed, the Session is created from
+  the given ContentSource rather than creating one from the database info URI."
   ([db-info]
    (create-session* db-info))
   ([db-info {:keys [default-request-options logger user-object
                     transaction-mode transaction-timeout]}]
-   (let [session (create-session* db-info)]
+   (create-session db-info
+                   nil
+                   {:default-request-options default-request-options
+                    :logger logger :user-object user-object
+                    :transaction-mode transaction-mode
+                    :transaction-timeout transaction-timeout}))
+  ([db-info content-source {:keys [default-request-options logger user-object
+                                   transaction-mode transaction-timeout]}]
+   (let [session (create-session* db-info content-source)]
      (when (map? default-request-options)
        (.setDefaultRequestOptions session (request-options default-request-options)))
      (when (instance? Logger logger)
@@ -290,12 +368,36 @@
        (.setTransactionTimeout session transaction-timeout))
      session)))
 
+;; TODO require privilege
+;; (defn session-cb-metadata
+;;   "TODO"
+;;   [session]
+;;   (let [cbmd (.getContentbaseMetaData session)]
+;;     {:session (.getSession cbmd) ;; XXX unnecessary...right?
+;;      :user (.getUser cbmd)
+;;      :cb-id (.getContentBaseId cbmd)
+;;      :cb-name (.getContentBaseName cbmd)
+;;      :driver-major-version (.getDriverMajorVersion cbmd)
+;;      :driver-minor-version (.getDriverMinorVersion cbmd)
+;;      :driver-patch-version (.getDriverPatchVersion cbmd)
+;;      :driver-version (.getDriverVersionString cbmd)
+;;      ;; :server-major-version (.getServerMajorVersion cbmd)
+;;      ;; :server-minor-version (.getServerMinorVersion cbmd)
+;;      ;; :server-patch-version (.getServerPatchVersion cbmd)
+;;      ;; :server-version (.getServerVersionString cbmd)
+;;      ;; :forest-ids (seq (.getForestIds cbmd))
+;;      ;; :forest-maps (.getForestMap cbmd)
+;;      ;; :forest-names (seq (.getForestNames cbmd))
+;;      }
+;;     ))
+
 (defn session-options
   "Returns a map describing all options on the given Session object."
   [session]
   {:default-request-options (.getDefaultRequestOptions session)
    :effective-request-options (.getEffectiveRequestOptions session)
    :logger (.getLogger session)
+   ;; :contentbase-metadata (session-cb-metadata session) TODO
    :xaresource (.getXAResource session)
    :user-object (.getUserObject session)
    :transaction-timeout (.getTransactionTimeout session)
