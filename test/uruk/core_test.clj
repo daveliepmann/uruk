@@ -71,11 +71,6 @@
     (is (= 6000
            (.getTimeoutMillis (request-options {:timeout-millis 6000}))))))
 
-;; TODO check that (request-options {:cache-result nil}) doesn't silently get ignored just because the answer might be false!
-
-
-(seq (TimeZone/getAvailableIDs))
-
 (deftest roundtrip-request-options
   (testing "All request options must be set as indicated"
     (is (= (let [req-opts (request-options {:timezone (TimeZone/getTimeZone "Pacific/Chuuk")
@@ -111,9 +106,6 @@
                  (with-open [sess (create-session db)]
                    (execute-xquery sess "\"hello world\"" {:options {:reuqest-time-limt 500}}))))))
 
-
-
-;; TODO a full end-to-end test of all request options
 
 ;;;; Session options
 (deftest default-session-options
