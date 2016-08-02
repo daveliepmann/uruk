@@ -137,12 +137,35 @@
            (is (= 56 (:transaction-timeout sess-opts)))
            (is (= :query (:transaction-mode sess-opts)))))))
 
+
+;; (deftest accept-only-valid-session-options
+;;   (testing "Invalid session options should throw an error"
+;;     (let [sess-opts (session-options
+;;                      (create-session db
+;;                                      {:this-does-not-exist "irrelevant string"}))])))
+
 ;; TODO accept-only-valid-session-options
 
 
 ;;;; Content creation options
 
-;; TODO content creation options default
+(deftest default-content-options
+  (testing "Passing nothing to content creation options should return default options"
+    (is (= {:encoding "UTF-8"
+            :format :none,
+            :permissions []
+            :buffer-size -1
+            :locale nil
+            :repair-level :default
+            :resolve-buffer-size 0
+            :collections []
+            :language nil
+            :resolve-entities false
+            :graph nil
+            :quality 0
+            :namespace nil
+            :temporal-collection nil}
+           (describe-content-creation-options (content-creation-options {}))))))
 
 (deftest content-options-roundtrip
   (testing "Round-trip options through creation and description"
