@@ -74,7 +74,7 @@
                     :quality 20
                     :repair-level :full
                     :resolve-buffer-size 20
-                    :resolve-entities true
+                    :resolve-entities true ;; TODO also test false, since we know boolean keys can be funny
                     :temporal-collection "my-temp"}]
           (= opts
              (describe-content-creation-options (content-creation-options opts)))))))
