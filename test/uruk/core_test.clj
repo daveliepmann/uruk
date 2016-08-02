@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [uruk.core :refer :all])
   (:import [java.util.logging Logger]
-           [java.util Locale]
+           [java.util Locale TimeZone]
            [com.marklogic.xcc RequestOptions]))
 
 ;; FIXME You'll have to fill in database credentials that work for
@@ -49,17 +49,61 @@
 
 ;;;; Request options
 
-;; TODO check that (request-options {:cache-result nil}) doesn't silently get ignored just because the answer might be false!
-
-;; (deftest default-request-options
-;;   (testing "A Request with no explicitly-set options must have default options"
-;;     (let [req-opts (request-options {})]
-;;       (describe-request-options req-opts))))
+(deftest default-request-options
+  (testing "A Request with no explicitly-set options must have default options"
+    (is (= (let [req-opts (request-options {})]
+             (describe-request-options req-opts))
+           {:timezone nil,
+            :cache-result true,
+            :locale nil,
+            :request-time-limit -1,
+            :default-xquery-version nil,
+            :timeout-millis -1,
+            :query-language nil,
+            :result-buffer-size 0,
+            :effective-point-in-time nil,
+            :request-name nil,
+            :auto-retry-delay-millis -1,
+            :max-auto-retry -1}))))
 
 (deftest sample-request-options
   (testing "Set sample option on request"
     (is (= 6000
            (.getTimeoutMillis (request-options {:timeout-millis 6000}))))))
+
+;; TODO check that (request-options {:cache-result nil}) doesn't silently get ignored just because the answer might be false!
+
+
+(seq (TimeZone/getAvailableIDs))
+
+(deftest roundtrip-request-options
+  (testing "All request options must be set as indicated"
+    (is (= (let [req-opts (request-options {:timezone (TimeZone/getTimeZone "Pacific/Chuuk")
+                                            :cache-result false,
+                                            :locale (Locale. "ru"),
+                                            :request-time-limit 156,
+                                            :default-xquery-version "xquery version \"0.9-ml\";",
+                                            :timeout-millis 763,
+                                            :query-language "Elvish"
+                                            :result-buffer-size 23,
+                                            :effective-point-in-time 14701453805890320
+                                            :request-name "JigoroKano",
+                                            :auto-retry-delay-millis 991,
+                                            :max-auto-retry 3})]
+             (describe-request-options req-opts))
+
+           {:timezone (TimeZone/getTimeZone "Pacific/Chuuk")
+            :cache-result false,
+            :locale (Locale. "ru"),
+            :request-time-limit 156,
+            :default-xquery-version "xquery version \"0.9-ml\";",
+            :timeout-millis 763,
+            :query-language "Elvish"
+            :result-buffer-size 23,
+            :effective-point-in-time 14701453805890320,
+            :request-name "JigoroKano",
+            :auto-retry-delay-millis 991,
+            :max-auto-retry 3}))))
 
 (deftest accept-only-valid-request-options
   (testing "Options that don't exist must raise an error"

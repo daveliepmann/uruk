@@ -217,6 +217,23 @@
           (fn (k options)))))
     request))
 
+(defn describe-request-options
+  "Given a RequestOptions object, returns a map describing those
+  request options."
+  [req-opts]
+  {:auto-retry-delay-millis (.getAutoRetryDelayMillis req-opts)
+   :cache-result (.getCacheResult req-opts)
+   :default-xquery-version (.getDefaultXQueryVersion req-opts)
+   :effective-point-in-time (.getEffectivePointInTime req-opts)
+   :locale (.getLocale req-opts)
+   :max-auto-retry (.getMaxAutoRetry req-opts)
+   :query-language (.getQueryLanguage req-opts)
+   :request-name (.getRequestName req-opts)
+   :request-time-limit (.getRequestTimeLimit req-opts)
+   :result-buffer-size (.getResultBufferSize req-opts)
+   :timeout-millis (.getTimeoutMillis req-opts)
+   :timezone (.getTimeZone req-opts)}) 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Session management
