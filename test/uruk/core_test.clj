@@ -188,7 +188,11 @@
           (= opts
              (describe-content-creation-options (content-creation-options opts)))))))
 
-;; TODO accept-only-valid-content-options
+(deftest accept-only-valid-content-options
+  (testing "Content Options that don't exist must raise an error"
+    (is (thrown? java.lang.IllegalArgumentException
+                 (content-creation-options {:does-not-exist "irrelevant"})))))
+
 
 ;;;; Variables
 
@@ -217,7 +221,6 @@
 ;;;; TODO Type conversion
 
 ;;;; Invalid query
-
 (deftest error-on-invalid-query
   (testing "An error must be thrown if MarkLogic is passed an invalid query."
     (is (thrown? java.lang.Exception
