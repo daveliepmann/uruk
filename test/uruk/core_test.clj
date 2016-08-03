@@ -122,21 +122,21 @@
   (testing "A session with explicitly-set options must reflect those options"
     (let [sess-opts (session-options
                      (create-session db
-                                     {:default-request-options {:timeout-millis 75}
+                                     {;; TODO test default Req Opts more?
+                                      :default-request-options {:timeout-millis 75}
+                                      :logger (Logger/getLogger "test-logger")
                                       ;; TODO test user-object
-                                      ;; TODO test Logger more deeply
-                                      ;; TODO test default Req Opts more?
                                       ;; TODO test effective Req Opts more?
                                       :transaction-timeout 56
                                       :transaction-mode :query}))]
       (and (is (= 75
                   (.getTimeoutMillis (:default-request-options sess-opts))
                   (.getTimeoutMillis (:effective-request-options sess-opts))))
-           (is (instance? Logger (:logger sess-opts)))
+           (is (and (instance? Logger (:logger sess-opts))
+                    (= "test-logger" (.getName (:logger sess-opts)))))
            (is (empty? (:user-object sess-opts)))
            (is (= 56 (:transaction-timeout sess-opts)))
            (is (= :query (:transaction-mode sess-opts)))))))
-
 
 ;; (deftest accept-only-valid-session-options
 ;;   (testing "Invalid session options should throw an error"
@@ -217,8 +217,13 @@
                                    :shape :single!}))))))
 
 ;; TODO more variable testing
+;; TODO test `as-is?`
+;; TODO test (all?) variable types
+;; TODO test default xs_string map structure
+
 
 ;;;; TODO Type conversion
+
 
 ;;;; Invalid query
 (deftest error-on-invalid-query
@@ -229,9 +234,12 @@
                  (with-open [sess (create-session db)]
                    (execute-xquery sess "let $uri := xdmp:get-request-field(\"uri\")returnif"))))))
 
+
 ;;;; TODO Shape
 
+
 ;;;; TODO Transactions
+
 
 ;;;; Element insertion
 
