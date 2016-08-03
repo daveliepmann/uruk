@@ -249,65 +249,80 @@
        (.setEnabledCipherSuites sec-opts (into-array String cipher-suites)))
      sec-opts)))
 
-(defn uri-content-source
+(defn configure-content-source
+  "Given a ContentSource object, modifies that object according to the
+  given map of configuration options."
+  [content-source {:keys [default-logger preemptive-auth]}]
+  (when (instance? Logger default-logger)
+    (.setDefaultLogger content-source default-logger))
+  (when (or (true? preemptive-auth)
+            (false? preemptive-auth))
+    (.setAuthenticationPreemptive content-source preemptive-auth))
+  content-source)
+
+(defn make-uri-content-source
   "Return a ContentSource object according to the given `uri` and,
   optionally, a configuration map describing a SecurityOptions object,
   default Logger object, and boolean flag for whether basic
   authentication should be attempted preemptively. Accepts URI or
   string for `uri`."
-  ([uri] (uri-content-source uri nil))
+  ([uri] (make-uri-content-source uri nil))
   ([uri {:keys [security-options default-logger preemptive-auth]}]
-   (let [cs (if (instance? SecurityOptions security-options)
-              (ContentSourceFactory/newContentSource (if (instance? URI uri)
-                                                       uri (URI. uri))
-                                                     security-options)
-              (ContentSourceFactory/newContentSource (if (instance? URI uri)
-                                                       uri (URI. uri))))]
-     (when (instance? Logger default-logger)
-       (.setDefaultLogger cs default-logger))
-     (when (or (true? preemptive-auth)
-               (false? preemptive-auth))
-       (.setAuthenticationPreemptive cs preemptive-auth))
-     cs)))
+   (configure-content-source (if (instance? SecurityOptions security-options)
+                               (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                                                        uri (URI. uri))
+                                                                      security-options)
+                               (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                                                        uri (URI. uri))))
+                             {:default-logger default-logger
+                              :preemptive-auth preemptive-auth})))
 
-;; FIXME TODO all of these need to allow config map of :preemptive-auth, :default-logger
-(defn hosted-content-source
-  "Returna a ContentSource object according to the given `host`
-  String, integer `port`, and optionally `user` and `password`, and
-  `content-base`, and `security-options`."
-  ([host port]
-   ;; Return a ContentSource object that will serve as the source of
-   ;; connections to the server on the given host and port, with no
-   ;; default login credentials.
-   (ContentSourceFactory/newContentSource host port))
-  ([host port user password]
-   (hosted-content-source host port user password nil nil))
-  ([host port user password content-base]
-   (hosted-content-source host port user password content-base nil))
+(defn make-hosted-content-source
+  "Returna a ContentSource object according to the given `host` String
+  and integer `port`, and optionally a configuration map defining the
+  `user` and `password`, `content-base`, `security-options`, and/or
+  default Logger object and boolean flag for whether basic
+  authentication should be attempted preemptively."
+  ([host port] ;; no default login credentials
+   (make-hosted-content-source host port nil))
+  ([host port {:keys [user password content-base security-options
+                      default-logger preemptive-auth]}]
+   (configure-content-source (ContentSourceFactory/newContentSource
+                              host port
+                              ;; user and password must be together
+                              (when (seq user)
+                                user)
+                              (when (seq user)
+                                password)
+                              (when (seq content-base)
+                                content-base)
+                              (when (instance? SecurityOptions security-options)
+                                security-options))
+                             {:default-logger default-logger
+                              :preemptive-auth preemptive-auth})))
 
-  ;; Return a ContentSource object that will serve as the source of
-  ;; connections to the server on the given host and port, with login
-  ;; credentials of the given user and password.
-  ([host port user password content-base security-options]
-   ;; TODO enforce or construct SecurityOptions for security-opts
-   (ContentSourceFactory/newContentSource host port
-                                          user password
-                                          content-base
-                                          security-options)))
+(defn make-cp-content-source
+  "Given a ConnectionProvider, user, password, content-base, and an
+  optional configuration map, returns a ContentSource object that will
+  use the provided ConnectionProvider instance to obtain server
+  connections.
 
-;; FIXME TODO all of these need to allow config map of :preemptive-auth, :default-logger
-(defn managed-content-source
-  "TODO"
-  [cxn-provider user password content-base]
-  ;; Return a ContentSource object that will use the provided
-  ;; ConnectionProvider instance to obtain server connections, with the
-  ;; given default login credentials and contentbase values.
-  ;; XXX advanced
-  (when-not (instance? ConnectionProvider cxn-provider)
-    (throw (IllegalArgumentException. "Content Source cxn-provider must be a ConnectionProvider")))
-  (ContentSourceFactory/newContentSource cxn-provider
-                                         user password
-                                         content-base))
+  WARNING from the Javadoc: [This function] should only be used by
+  advanced users. A misbehaving ConnectionProvider implementation can
+  result in connection failures and potentially even data loss. Be
+  sure you know what you're doing."
+  ([cxn-provider user password content-base]
+   (make-cp-content-source cxn-provider user password content-base nil))
+  ([cxn-provider user password content-base {:keys [default-logger
+                                                    preemptive-auth]}]
+   (when-not (instance? ConnectionProvider cxn-provider)
+     (throw (IllegalArgumentException.
+             "Content Source cxn-provider parameter must be a ConnectionProvider")))
+   (configure-content-source (ContentSourceFactory/newContentSource cxn-provider
+                                                                    user password
+                                                                    content-base)
+                             {:default-logger default-logger
+                              :preemptive-auth preemptive-auth})))
 
 (defn- create-session*
   "Creates session, given map of database info. If complex connection

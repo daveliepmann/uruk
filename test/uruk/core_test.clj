@@ -213,10 +213,10 @@
 
 (deftest content-source-creation-with-uri
   (testing "content source creation from just a URI"
-    (let [cs (uri-content-source "xdbc://localhost:8383/")]
+    (let [cs (make-uri-content-source "xdbc://localhost:8383/")]
       (and (instance? ContentSource cs)
-           (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
-           (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
+           (= 8383 (.getPort (.getConnectionProvider cs)))
+           (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
 
 ;; TODO content source from URI and securityoptions
 ;; (deftest content-source-creation-with-uri-and-security-options
@@ -229,15 +229,15 @@
 
 (deftest content-source-creation-with-host-and-port
   (testing "content source creation from host and port"
-    (let [cs (hosted-content-source "localhost" 8383)]
+    (let [cs (make-hosted-content-source "localhost" 8383)]
       (and (instance? ContentSource cs)
-           (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
-           (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
+           (= 8383 (.getPort (.getConnectionProvider cs)))
+           (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
 
 (deftest content-source-creation-with-host-port-user-pwd
   (testing "content source creation from host and port"
-    (let [cs (hosted-content-source "localhost" 8383
-                                    "rest-admin" "x")]
+    (let [cs (make-hosted-content-source "localhost" 8383
+                                         {:user "rest-admin" :password "x"})]
       (and (instance? ContentSource cs)
-           (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
-           (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
+           (= 8383 (.getPort (.getConnectionProvider cs)))
+           (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
