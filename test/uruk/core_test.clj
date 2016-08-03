@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [uruk.core :refer :all])
   (:import [java.util.logging Logger]
-           [com.marklogic.xcc RequestOptions]))
+           [com.marklogic.xcc RequestOptions ContentSource]))
 
 ;; FIXME You'll have to fill in database credentials that work for
 ;; your system:
@@ -202,3 +202,42 @@
 ;;;; TODO Transactions
 
 ;;;; TODO element insertion
+
+
+;;;; TODO security options
+;; (requires SSLContext)
+
+
+
+;;;; Content Source from URI
+
+(deftest content-source-creation-with-uri
+  (testing "content source creation from just a URI"
+    (let [cs (uri-content-source "xdbc://localhost:8383/")]
+      (and (instance? ContentSource cs)
+           (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
+           (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
+
+;; TODO content source from URI and securityoptions
+;; (deftest content-source-creation-with-uri-and-security-options
+;;   (testing "content source creation from just a URI"
+;;     (let [cs (uri-content-source "xdbc://localhost:8383/"
+;;                                  (make-security-options FIXME))]
+;;       (and (instance? ContentSource cs)
+;;            (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
+;;            (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
+
+(deftest content-source-creation-with-host-and-port
+  (testing "content source creation from host and port"
+    (let [cs (hosted-content-source "localhost" 8383)]
+      (and (instance? ContentSource cs)
+           (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
+           (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
+
+(deftest content-source-creation-with-host-port-user-pwd
+  (testing "content source creation from host and port"
+    (let [cs (hosted-content-source "localhost" 8383
+                                    "rest-admin" "x")]
+      (and (instance? ContentSource cs)
+           (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
+           (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
