@@ -233,4 +233,25 @@
 
 ;;;; TODO Transactions
 
-;;;; TODO element insertion
+;;;; Element insertion
+
+(deftest can-insert-doc
+  (testing "Clojure XML Elements must be insertable as documents"
+    ;; Insert a document
+    (with-open [session (create-session db)]
+      (insert-element session
+                      "/content-factory/new-doc"
+                      (clojure.data.xml/element :foo)))
+    ;; Did that insert work?
+    (is (= "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<foo/>"
+           (with-open [session (create-session db)]
+             (execute-xquery session
+                             "xquery version \"1.0-ml\"; fn:doc('/content-factory/new-doc');"
+                             {:shape :single}))))
+    ;; Clean up inserted document so we don't affect the next test run
+    (with-open [session (create-session db)]
+      (execute-xquery session
+                      "xquery version \"1.0-ml\"; xdmp:document-delete('/content-factory/new-doc');"
+                      {:shape :single}))))
+
+;; TODO test element insertion with content creation option, e.g. quality=2
