@@ -705,7 +705,7 @@
   current `session`. Optionally takes a map of content creation
   options per `content-creation-options`.
 
-  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContent(com.marklogic.xcc.Content"
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContent(com.marklogic.xcc.Content)"
   ([session uri element]
    (.insertContent session (element->content uri element)))
   ([session uri element options]
