@@ -235,11 +235,12 @@
 ;;;; Session management
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
-(defn security-options
-  "TODO"
-  ([ssl-context] (security-options ssl-context nil))
+(defn make-security-options
+  "Given an SSLContext object and, optionally, a configuration map
+  describing cipher suites and/or protocols to enable, returns a
+  MarkLogic SecurityOptions object configured accordingly, to be used
+  in session or content source creation."
+  ([ssl-context] (make-security-options ssl-context nil))
   ([ssl-context {:keys [protocols cipher-suites]}]
    (let [sec-opts (SecurityOptions. ssl-context)]
      (when (seq protocols)
@@ -248,20 +249,32 @@
        (.setEnabledCipherSuites sec-opts (into-array String cipher-suites)))
      sec-opts)))
 
-
 (defn uri-content-source
-  "TODO"
+  "Return a ContentSource object according to the given `uri` and,
+  optionally, a configuration map describing a SecurityOptions object,
+  default Logger object, and boolean flag for whether basic
+  authentication should be attempted preemptively. Accepts URI or
+  string for `uri`."
   ([uri] (uri-content-source uri nil))
-  ;; Return a ContentSource object that will serve as the source of
-  ;; connections to the server specified by the given URI.
-  ([uri security-opts]
-   ;; TODO enforce or construct SecurityOptions for security-opts
-   (ContentSourceFactory/newContentSource (if (instance? URI uri)
-                                            uri (URI. uri))
-                                          security-opts)))
+  ([uri {:keys [security-options default-logger preemptive-auth]}]
+   (let [cs (if (instance? SecurityOptions security-options)
+              (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                                       uri (URI. uri))
+                                                     security-options)
+              (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                                       uri (URI. uri))))]
+     (when (instance? Logger default-logger)
+       (.setDefaultLogger cs default-logger))
+     (when (or (true? preemptive-auth)
+               (false? preemptive-auth))
+       (.setAuthenticationPreemptive cs preemptive-auth))
+     cs)))
 
+;; FIXME TODO all of these need to allow config map of :preemptive-auth, :default-logger
 (defn hosted-content-source
-  "TODO"
+  "Returna a ContentSource object according to the given `host`
+  String, integer `port`, and optionally `user` and `password`, and
+  `content-base`, and `security-options`."
   ([host port]
    ;; Return a ContentSource object that will serve as the source of
    ;; connections to the server on the given host and port, with no
@@ -275,13 +288,14 @@
   ;; Return a ContentSource object that will serve as the source of
   ;; connections to the server on the given host and port, with login
   ;; credentials of the given user and password.
-  ([host port user password content-base security-opts]
+  ([host port user password content-base security-options]
    ;; TODO enforce or construct SecurityOptions for security-opts
    (ContentSourceFactory/newContentSource host port
                                           user password
                                           content-base
-                                          security-opts)))
+                                          security-options)))
 
+;; FIXME TODO all of these need to allow config map of :preemptive-auth, :default-logger
 (defn managed-content-source
   "TODO"
   [cxn-provider user password content-base]
@@ -294,9 +308,6 @@
   (ContentSourceFactory/newContentSource cxn-provider
                                          user password
                                          content-base))
-
-
-
 
 (defn- create-session*
   "Creates session, given map of database info. If complex connection
