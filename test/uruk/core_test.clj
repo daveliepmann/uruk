@@ -275,5 +275,3 @@
                       "xquery version \"1.0-ml\";
                        xdmp:document-delete('/content-factory/new-doc');"
                       {:shape :single}))))
-
-;; TODO test element insertion with content creation option, e.g. quality=2
