@@ -256,10 +256,10 @@
   "Given a SecurityOptions object, returns a map describing its
   configuration."
   [security-options]
-  {:hashcode (.hashCode security-ptions)
-   :cipher-suites (.getEnabledCipherSuites security-ptions)
-   :protocols (.getEnabledProtocols security-ptions)
-   :ssl-context (.getSslContext security-ptions)})
+  {:hashcode (.hashCode security-options)
+   :cipher-suites (.getEnabledCipherSuites security-options)
+   :protocols (.getEnabledProtocols security-options)
+   :ssl-context (.getSslContext security-options)})
 
 (defn configure-content-source
   "Given a ContentSource object, modifies that object according to the
