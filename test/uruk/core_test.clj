@@ -459,8 +459,6 @@
 ;;                                                            "rest-admin" "x" "TutorialDB")
 ;;                                    {})))
 
-
-
 (deftest content-src-options
   (testing "Content Source preemptive-authentication settings"
     (is (true? (.isAuthenticationPreemptive (make-uri-content-source "xdbc://localhost:8383/"
@@ -474,17 +472,13 @@
     ;; TODO with make-cp-content-source, once we want to delve into
     ;; the extreme complexity of ConnectionProvider
     )
-  ;; (testing "Content Source default Logger settings"
-  ;;   (is (= "foo" (.getName (.getDefaultLogger (make-uri-content-source
-  ;;                                              "xdbc://localhost:8383/"
-  ;;                                              {:default-logger (Logger. )})))))
-  ;;   (is (false? (.isAuthenticationPreemptive (make-uri-content-source "xdbc://localhost:8383/"
-  ;;                                                                     {:preemptive-auth false}))))
-  ;;   (is (true? (.isAuthenticationPreemptive (make-hosted-content-source "localhost" 8383
-  ;;                                                                       {:preemptive-auth true}))))
-  ;;   (is (false? (.isAuthenticationPreemptive (make-hosted-content-source "localhost" 8383
-  ;;                                                                        {:preemptive-auth false}))))
-  ;;   ;; TODO with make-cp-content-source, once we want to delve into
-  ;;   ;; the extreme complexity of ConnectionProvider
-  ;;   )
-  )
+  (testing "Content Source default Logger settings"
+    (is (= "foo" (.getName (.getDefaultLogger (make-uri-content-source
+                                               "xdbc://localhost:8383/"
+                                               {:default-logger (Logger/getLogger "foo")})))))
+    (is (= "bar" (.getName (.getDefaultLogger (make-hosted-content-source
+                                               "localhost" 8383
+                                               {:default-logger (Logger/getLogger "bar")})))))
+    ;; TODO with make-cp-content-source, once we want to delve into
+    ;; the extreme complexity of ConnectionProvider
+    ))
