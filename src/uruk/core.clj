@@ -90,7 +90,7 @@
   (hash-map (.toString (.getName xdm-var))
             (.toString (.getValue xdm-var))))
 
-(def types
+(def xcc-type->conv-fn
   "Default mapping from MarkLogic XCC types (e.g. those that might be
   returned in a query's result set) to Clojure functions intended to
   convert to Clojure types. See
@@ -147,7 +147,7 @@
    "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
    "xs:yearMonthDuration" str})
 
-(defn result-type
+(defn result->type
   "Returns type string of the given query Result object. Currently
   assumes result is homogenous."
   [result]
@@ -158,10 +158,10 @@
   MarkLogic query result sequence. Default type mappings can be
   overridden (in part or in whole) with the optional parameter
   `type-mapping`, which should contain a transformation function keyed
-  by an XCC type string. See `types` above."
+  by an XCC type string. See `xcc-type->conv-fn` above."
   [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
-  (map (fn [item] (((merge types
+  (map (fn [item] (((merge xcc-type->conv-fn
                           (when (map? type-mapping)
                             type-mapping))
                    (.toString (.getValueType item))) item))
@@ -189,7 +189,7 @@
     :timeout-millis
     :timezone})
 
-(defn request-options
+(defn make-request-options
   "Creates a Request Options object (to pass to a Request or a
   Session) out of the given options map. See `valid-request-options`
   for supported keywords."
@@ -622,7 +622,7 @@
 
     clj-val))
 
-(defn- request-obj
+(defn- make-request-obj
   "Build a Request object using the given `request-factory` builder,
   request `options`, and bindings for XQuery external `variables`."
   [request-factory options variables]
@@ -643,20 +643,21 @@
                                         value
                                         (wrap-val value type))))))
                acc)
-             (doto request-factory (.setOptions (request-options options)))
+             (doto request-factory (.setOptions (make-request-options options)))
              variables))
 
 (defn submit-request
   "Construct, submit, and return raw results of request for the given
   `session` using `request-factory` and `query`. Modify it
   with (possibly empty) `options` and `variables` maps. Applies type
-  conversion to response according to defaults and `types`. Variables
-  may be passed as a map of Strings or with String names corresponding
-  to maps describing the variable using mandatory key `:value` and
-  optional keys `:namespace` and `:type`.`"
+  conversion to response according to defaults and
+  `xcc-type->conv-fn`. Variables may be passed as a map of Strings or
+  with String names corresponding to maps describing the variable
+  using mandatory key `:value` and optional keys `:namespace` and
+  `:type`.`"
   [request-factory session query options variables types shape]
   (let [req (sling/try+ (.submitRequest session
-                                        (request-obj request-factory options variables))
+                                        (make-request-obj request-factory options variables))
                         ;; RequestException and its subclass
                         ;; XQueryException have overridden toString,
                         ;; so only those need to be re-thrown with
@@ -693,7 +694,7 @@
   connection defined by the given session. Takes an optional
   configuration map describing request `options` and `variables`,
   desired `shape` of the result, and overrides of default type
-  conversion in `types`.
+  conversion in `xcc-type->conv-fn`.
 
   Options passed must be in `valid-request-options` and conform to
   `request-options`.
@@ -707,8 +708,8 @@
   return only the first value.
 
   Type conversion overrides must be a map using keys present in
-  `uruk.core/types` and conform to use in `convert-types`, that is,
-  including values which are a function of one variable."
+  `uruk.core/xcc-type->conv-fn` and conform to use in `convert-types`,
+  that is, including values which are a function of one variable."
   ([session query]
    (execute-xquery session query {}))
   ([session query {:keys [options variables types shape]}]
@@ -719,7 +720,8 @@
   "Execute the named module as a request to the database connection
   defined by the given session. Takes an optional configuration map
   describing request `options` and `variables`, desired `shape` of the
-  result, and overrides of default type conversion in `types`.
+  result, and overrides of default type conversion in
+  `xcc-type->conv-fn`.
 
   Options passed must be in `valid-request-options` and conform to
   `request-options`.
@@ -733,8 +735,8 @@
   return only the first value.
 
   Type conversion overrides must be a map using keys present in
-  `uruk.core/types` and conform to use in `convert-types`, that is,
-  including values which are a function of one variable."
+  `uruk.core/xcc-type->conv-fn` and conform to use in `convert-types`,
+  that is, including values which are a function of one variable."
   ([session module]
    (execute-module session module {}))
   ([session module {:keys [options variables types shape]}]
