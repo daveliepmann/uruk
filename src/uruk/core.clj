@@ -421,18 +421,27 @@
 ;;      }
 ;;     ))
 
-(defn describe-session-options
-  "Returns a map describing all options on the given Session object."
+(defn describe-session
+  "Returns a map describing configuration of the given Session
+  object."
   [session]
   {:default-request-options (.getDefaultRequestOptions session)
    :effective-request-options (.getEffectiveRequestOptions session)
+   :connection-uri (.getConnectionUri session)
    :logger (.getLogger session)
    ;; :contentbase-metadata (session-cb-metadata session) TODO
+   :contentbase-name (.getContentBaseName session)
+   :current-server-time (.getCurrentServerPointInTime session)
+   :content-source (.getContentSource session)
    :xaresource (.getXAResource session)
-   :user-object (.getUserObject session)
+   :user-object (.getUserObject session) 
+   :user-credentials (.getUserCredentials session)
+   :closed? (.isClosed session) ;; TODO maybe create (defn closed? [session] ...) ? Except it wouldn't be specific to Session in this ns, and ResultSequence also has isClosed, so it's ambiguous.
+   :cached-transaction-timeout (.getCachedTxnTimeout session)
    :transaction-timeout (.getTransactionTimeout session)
    :transaction-mode ((clojure.set/map-invert transaction-modes)
                       (.getTransactionMode session))})
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Queries
