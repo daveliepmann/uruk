@@ -23,7 +23,6 @@
 
 (def version
   "XCC release number. Auto-generated.
-
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Version.html"
   {:string (Version/getVersionString)
    :version-major (Version/getVersionMajor)
@@ -421,7 +420,16 @@
 ;;      }
 ;;     ))
 
-(defn describe-session
+(defn usr-creds->map
+  "Given a UserCredentials object, returns a map describing its
+  configuration. See also methods `toHttpNegotiateAuth` and
+  `toHttpDigestAuth`."
+  [user-credentials]
+  {:username (.getUserName user-credentials)
+   :basic-auth (.toHttpBasicAuth user-credentials)
+   :obj user-credentials})
+
+(defn session->map
   "Returns a map describing configuration of the given Session
   object."
   [session]
@@ -435,7 +443,7 @@
    :content-source (.getContentSource session)
    :xaresource (.getXAResource session)
    :user-object (.getUserObject session) 
-   :user-credentials (.getUserCredentials session)
+   :user-credentials (usr-creds->map (.getUserCredentials session))
    :closed? (.isClosed session) ;; TODO maybe create (defn closed? [session] ...) ? Except it wouldn't be specific to Session in this ns, and ResultSequence also has isClosed, so it's ambiguous.
    :cached-transaction-timeout (.getCachedTxnTimeout session)
    :transaction-timeout (.getTransactionTimeout session)
