@@ -742,11 +742,20 @@
                    options variables types shape)))
 
 (defn spawn-module
-  "TODO
+  "Send the named module to the server to be run asynchronously, as a
+  request to the database connection defined by the given session.
+
+  Options passed must be in `valid-request-options` and conform to
+  `request-options`.
+
+  Variables may be passed as a map of Strings or with String names
+  corresponding to maps describing the variable using mandatory key
+  `:value` and optional keys `:namespace` and `:type`.`
+  
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ModuleSpawn.html"
   ([session module]
    (spawn-module session module {}))
-  ;; FIXME finish
+  ;; FIXME test
   ;; NB, no response handling b/c asynchonous
   ([session module {:keys [options variables]}]
    (submit-request (.newModuleSpawn session module) session module
