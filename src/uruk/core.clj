@@ -349,7 +349,6 @@
            (seq content-base)) (.newSession cs user password content-base))))
 
 (defn create-session
-  ;; TODO document content-source parameter
   "Create a Session for querying and transacting with. Parameter
   `db-info` describing database connection information must
   include :uri key, and may optionally include connection information
@@ -367,7 +366,8 @@
   session.)
 
   If optional `content-source` is passed, the Session is created from
-  the given ContentSource rather than creating one from the database info URI."
+  the given ContentSource rather than creating one from the database
+  info URI."
   ([db-info]
    (create-session* db-info))
   ([db-info {:keys [default-request-options logger user-object
