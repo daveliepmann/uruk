@@ -129,9 +129,10 @@
     (testing "session creation with URI content source using options"
       (is-default-session-options? (session->map
                                     (create-session
-                                     db (make-uri-content-source "xdbc://localhost:8383/"
-                                                                 {:preemptive-auth true})
-                                     {}))))
+                                     db (make-uri-content-source
+                                         "xdbc://localhost:8383/"
+                                         {:preemptive-auth false
+                                          :default-logger (Logger/getLogger "foobar")})))))
     (testing "session creation with hosted content source"
       (is-default-session-options? (session->map
                                     (create-session
