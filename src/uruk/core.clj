@@ -307,10 +307,10 @@
   use the provided ConnectionProvider instance to obtain server
   connections.
 
-  WARNING from the Javadoc: [This function] should only be used by
+  WARNING from the Javadoc: '[This function] should only be used by
   advanced users. A misbehaving ConnectionProvider implementation can
   result in connection failures and potentially even data loss. Be
-  sure you know what you're doing."
+  sure you know what you're doing.'"
   ([cxn-provider user password content-base]
    (make-cp-content-source cxn-provider user password content-base nil))
   ([cxn-provider user password content-base {:keys [default-logger
