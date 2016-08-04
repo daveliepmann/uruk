@@ -10,41 +10,35 @@
          :user "rest-admin" :password "x"
          :content-base "TutorialDB"})
 
-(deftest session-parms-1
-  (testing "Create session with just URI"
-    (is (= "Hello world"
-           (let [session (create-session db)]
-             (-> session
-                 (.submitRequest (.newAdhocQuery session
-                                                 "\"Hello world\""))
-                 .asString))))))
+(deftest create-session-parms
+  (testing "Creating sessions with a variety of parameters"
+    (testing "...with just URI"
+      (is (thrown? IllegalStateException
+                   (let [session (create-session {:uri "xdbc://localhost:8383/"})]
+                     (.submitRequest session (.newAdhocQuery session "\"Hello world\""))))))
 
-(deftest session-parms-2
-  (testing "Create session with URI and content-base"
-    (is (= "Hello world"
-           (let [session (create-session db)]
-             (-> session
-                 (.submitRequest (.newAdhocQuery session
-                                                 "\"Hello world\""))
-                 .asString))))))
+    (testing "...with URI and content-base"
+      (is (thrown? IllegalStateException
+                   (let [session (create-session {:uri "xdbc://localhost:8383/"
+                                                  :content-base "TutorialDB"})]
+                     (.submitRequest session (.newAdhocQuery session "\"Hello world\""))))))
 
-(deftest session-parms-3
-  (testing "Create session with URI, username, password"
-    (is (= "Hello world"
-           (let [session (create-session db)]
-             (-> session
-                 (.submitRequest (.newAdhocQuery session
-                                                 "\"Hello world\""))
-                 .asString))))))
+    (testing "...with URI, user, password"
+      (is (= "Hello world"
+             (let [session (create-session {:uri "xdbc://localhost:8383/"
+                                            :user "rest-admin" :password "x"})]
+               (-> session
+                   (.submitRequest (.newAdhocQuery session
+                                                   "\"Hello world\""))
+                   .asString)))))
 
-(deftest session-parms-4
-  (testing "Create session with all non-options parameters"
-    (is (= "Hello world" 
-           (let [session (create-session db)]
-             (-> session
-                 (.submitRequest (.newAdhocQuery session
-                                                 "\"Hello world\""))
-                 .asString))))))
+    (testing "...with URI, user, password, content-base"
+      (is (= "Hello world"
+             (let [session (create-session db)]
+               (-> session
+                   (.submitRequest (.newAdhocQuery session
+                                                   "\"Hello world\""))
+                   .asString)))))))
 
 ;;;; Request options
 
