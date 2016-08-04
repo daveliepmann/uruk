@@ -52,80 +52,141 @@
     (is (= 6000
            (.getTimeoutMillis (request-options {:timeout-millis 6000}))))))
 
-(deftest accept-only-valid-request-options
+(deftest fail-on-invalid-request-option
   (testing "Options that don't exist must raise an error"
     (is (thrown? java.lang.IllegalArgumentException
                  (with-open [sess (create-session db)]
                    (execute-xquery sess "\"hello world\"" {:options {:reuqest-time-limt 500}}))))))
 
-
-
 ;; TODO a full end-to-end test of all request options
+
+(defn is-default-session-options?
+  "True if given session options conform to the expected default
+  SessionOptions; false otherwise."
+  [session-options]
+  (and (is (instance? RequestOptions (:default-request-options session-options)))
+       (is (instance? RequestOptions (:effective-request-options session-options)))
+       (is (instance? Logger (:logger session-options))) ;; FIXME need better test
+       (is (nil? (:user-object session-options)))
+       (is (= 0 (:transaction-timeout session-options)))
+       (is (nil? (:transaction-mode session-options)))))
 
 ;;;; Session options
 (deftest default-session-options
   (testing "A session with no explicitly-set options must have default options"
-    (let [sess-opts (session-options (create-session db))]
-      (and (is (instance? RequestOptions (:default-request-options sess-opts)))
-           (is (instance? RequestOptions (:effective-request-options sess-opts)))
-           (is (instance? Logger (:logger sess-opts)))
-           (is (nil? (:user-object sess-opts)))
-           (is (= 0 (:transaction-timeout sess-opts)))
-           (is (nil? (:transaction-mode sess-opts)))))))
+    (testing "basic session creation with full database specified"
+      (is-default-session-options? (session-options (create-session db))))
+    (testing "session creation with URI content source"
+      (is-default-session-options? (session-options
+                                    (create-session
+                                     db (make-uri-content-source "xdbc://localhost:8383/")
+                                     {}))))
+    (testing "session creation with URI content source using options"
+      (is-default-session-options? (session-options
+                                    (create-session
+                                     db (make-uri-content-source "xdbc://localhost:8383/"
+                                                                 {:preemptive-auth true})
+                                     {}))))
+    (testing "session creation with hosted content source"
+      (is-default-session-options? (session-options
+                                    (create-session
+                                     db (make-hosted-content-source "localhost" 8383)
+                                     {}))))
+    (testing "session creation with hosted content source using options"
+      (is-default-session-options? (session-options
+                                    (create-session
+                                     db (make-hosted-content-source "localhost" 8383
+                                                                    {:content-base "TutorialDB"})
+                                     {}))))
+    ;; TODO once we want to delve into extreme complexity of ConnectionProvider
+    ;; (testing "session creation with connectionProvider content source"
+    ;;   (is-default-session-options? (session-options
+    ;;                                 (create-session
+    ;;                                  db (make-cp-content-source ...)
+    ;;                                  {}))))
+    ;; TODO once we want to delve into extreme complexity of ConnectionProvider
+    ;; (testing "session creation with connectionProvider content source with options"
+    ;;   (is-default-session-options? (session-options
+    ;;                                 (create-session
+    ;;                                  db (make-cp-content-source ...)
+    ;;                                  {}))))
+    ))
+
+(defn as-expected-session-options?
+  [session-options expected-options]
+  (and (is (= (:timeout-millis (:default-request-options expected-options))
+              (.getTimeoutMillis (:default-request-options session-options))
+              (.getTimeoutMillis (:effective-request-options session-options))))
+       (is (instance? Logger (:logger session-options))) ;; TODO test Logger better--name?
+       (is (empty? (:user-object session-options))) ;; XXX is this all we can test user-object?
+       (is (= (:transaction-timeout session-options)
+              (:transaction-timeout expected-options)))
+       (is (= (:transaction-mode session-options)
+              (:transaction-mode expected-options)))))
 
 (deftest set-session-options
   (testing "A session with explicitly-set options must reflect those options"
-    (let [sess-opts (session-options
-                     (create-session db
-                                     {:default-request-options {:timeout-millis 75}
-                                      ;; TODO test user-object
-                                      ;; TODO test Logger more deeply
-                                      ;; TODO test default Req Opts more?
-                                      ;; TODO test effective Req Opts more?
-                                      :transaction-timeout 56
-                                      :transaction-mode :query}))]
-      (and (is (= 75
-                  (.getTimeoutMillis (:default-request-options sess-opts))
-                  (.getTimeoutMillis (:effective-request-options sess-opts))))
-           (is (instance? Logger (:logger sess-opts)))
-           (is (empty? (:user-object sess-opts)))
-           (is (= 56 (:transaction-timeout sess-opts)))
-           (is (= :query (:transaction-mode sess-opts)))))))
+    (let [opts {:default-request-options {:timeout-millis 75}
+                ;; TODO test default Req Opts more?
+                ;; TODO test effective Req Opts more?
+                :transaction-timeout 56
+                :transaction-mode :query}]
+      (testing "with standard database map"
+        (as-expected-session-options? (session-options
+                                       (create-session db opts))
+                                      opts))
+      (testing "with uri content source"
+        (as-expected-session-options? (session-options
+                                       (create-session db
+                                                       (make-uri-content-source "xdbc://localhost:8383/")
+                                                       opts))
+                                      opts))
+      (testing "with uri content source using options"
+        (as-expected-session-options? (session-options
+                                       (create-session
+                                        db (make-uri-content-source "xdbc://localhost:8383/"
+                                                                    {:preemptive-auth false})
+                                        opts))
+                                      opts))
+      (testing "with hosted content source"
+        (as-expected-session-options? (session-options
+                                       (create-session
+                                        db (make-hosted-content-source "localhost" 8383)
+                                        opts))
+                                      opts))
+      (testing "with hosted content source using content base"
+        (as-expected-session-options? (session-options
+                                       (create-session
+                                        db (make-hosted-content-source "localhost" 8383
+                                                                       {:content-base "TutorialDB"})
+                                        opts))
+                                      opts))
+      (testing "with hosted content source using user, password, content-base"
+        (as-expected-session-options? (session-options
+                                       (create-session
+                                        db (make-hosted-content-source "localhost" 8383
+                                                                       {:user "rest-admin"
+                                                                        :password "x"
+                                                                        :content-base "TutorialDB"})
+                                        opts))
+                                      opts))
+      (testing "with hosted content source using user and password"
+        (as-expected-session-options? (session-options
+                                       (create-session
+                                        db (make-hosted-content-source "localhost" 8383
+                                                                       {:user "rest-admin"
+                                                                        :password "x"})
+                                        opts))
+                                      opts))
+      ;; TODO once we want to delve into extreme complexity of ConnectionProvider
+      ;; (as-expected-session-options? (session-options
+      ;;                                (create-session
+      ;;                                 db (make-cp-content-source ...)
+      ;;                                 opts))
+      ;;                               opts)
+      )))
 
 ;; TODO accept-only-valid-session-options
-
-;; TODO all these session creation approaches
-;; (session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                   :user "rest-admin" :password "x"
-;;                                   :content-base "TutorialDB"}
-;;                                  {} (uri-content-source "xdbc://localhost:8383/")))
-
-;; (comment
-;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "rest-admin" :password "x"
-;;                                     :content-base "TutorialDB"}
-;;                                    {} (uri-content-source "xdbc://localhost:8383/"
-;;                                                           (security-options TODO)))))
-
-;; (session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                   :user "rest-admin" :password "x"
-;;                                   :content-base "TutorialDB"}
-;;                                  {} (hosted-content-source "localhost" 8383
-;;                                                            "rest-admin" "x" "TutorialDB")))
-
-;; (comment
-;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "rest-admin" :password "x"
-;;                                     :content-base "TutorialDB"}
-;;                                    {} (hosted-content-source "localhost" 8383
-;;                                                              "rest-admin" "x" "TutorialDB"
-;;                                                              (security-options TODO))))
-
-;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "rest-admin" :password "x"
-;;                                     :content-base "TutorialDB"}
-;;                                    {} (managed-content-source connection-provider ;; TODO implement https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/ConnectionProvider.html interface
-;;                                                               "rest-admin" "x" "TutorialDB"))))
 
 
 ;;;; Content creation options
@@ -205,6 +266,13 @@
 
 ;;;; Content Source from URI
 
+;; (comment
+;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
+;;                                     :user "rest-admin" :password "x"
+;;                                     :content-base "TutorialDB"}
+;;                                    {} (uri-content-source "xdbc://localhost:8383/"
+;;                                                           (security-options TODO)))))
+
 (deftest content-source-creation-with-uri
   (testing "content source creation from just a URI"
     (let [cs (make-uri-content-source "xdbc://localhost:8383/")]
@@ -235,3 +303,20 @@
       (and (instance? ContentSource cs)
            (= 8383 (.getPort (.getConnectionProvider cs)))
            (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
+
+;; TODO with SSLContext
+;; (comment
+;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
+;;                                     :user "rest-admin" :password "x"
+;;                                     :content-base "TutorialDB"}
+;;                                    (hosted-content-source "localhost" 8383
+;;                                                           "rest-admin" "x" "TutorialDB"
+;;                                                           (security-options TODO))
+;;                                    {}))
+
+;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
+;;                                     :user "rest-admin" :password "x"
+;;                                     :content-base "TutorialDB"}
+;;                                    (managed-content-source connection-provider ;; TODO implement https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/ConnectionProvider.html interface
+;;                                                            "rest-admin" "x" "TutorialDB")
+;;                                    {})))
