@@ -29,8 +29,8 @@
    :version-minor (Version/getVersionMinor)
    :version-patch (Version/getVersionPatch)})
 
-(def doc-format
-  "Enumeration of allowed document formats. Used at insertion
+(def ->doc-format
+  "Mapping of keywords to allowed document formats. Used at insertion
   time.
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/DocumentFormat.html"
   {:xml DocumentFormat/XML
@@ -39,23 +39,23 @@
    :none   DocumentFormat/NONE
    :binary DocumentFormat/BINARY})
 
-(def doc-repair-level
-  "Enumeration of document repair levels. Used at insertion time.
+(def ->doc-repair-level
+  "Mapping of keywords to document repair levels. Used at insertion time.
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/DocumentRepairLevel.html"
   {:default DocumentRepairLevel/DEFAULT
    :full    DocumentRepairLevel/FULL
    :none    DocumentRepairLevel/NONE})
 
-(def content-capability
-  "Enumeration of content permission capability values.
+(def ->content-capability
+  "Mapping of keywords to content permission capability values.
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCapability.html"
   {:execute ContentCapability/EXECUTE
    :insert  ContentCapability/INSERT
    :read    ContentCapability/READ
    :update  ContentCapability/UPDATE})
 
-(def transaction-modes
-  "Enumeration of valid Session transaction modes. See
+(def ->transaction-mode
+  "Mapping of keywords to valid Session transaction modes. See
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.TransactionMode.html"
   {:auto Session$TransactionMode/AUTO
    :query Session$TransactionMode/QUERY
@@ -67,7 +67,7 @@
 ;;;; Type conversion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn convert-number
+(defn java->num
   "Reads a number from a numeric Java object of a type from
   com.marklogic.xcc.types. Returns nil if not a number. Designed for
   robust number-handling while preventing read-string security
@@ -108,7 +108,7 @@
 
    ;; JsonItem TODO
    "null-node()" java-json->clj-json ;; NullNode
-   "number-node()" convert-number ;; NumberNode
+   "number-node()" java->num ;; NumberNode
    "object-node()" java-json->clj-json ;; ObjectNode
 
    ;; XdmAtomic TODO
@@ -128,10 +128,10 @@
    "xs:date" str
    "xs:dateTime" str
    "xs:dayTimeDuration" str
-   "xs:decimal" convert-number
-   "xs:double" convert-number
+   "xs:decimal" java->num
+   "xs:double" java->num
    "xs:duration" str
-   "xs:float" convert-number
+   "xs:float" java->num
    ;; Maybe strip hyphens from all Gregorian date-parts?
    ;; or make conform to a particular date type?
    "xs:gDay" str
@@ -140,7 +140,7 @@
    "xs:gYear" str
    "xs:gYearMonth" str
    "xs:hexBinary" str ;; looks OK but test with real doc
-   "xs:integer" convert-number
+   "xs:integer" java->num
    "xs:QName" str
    "xs:string" str
    "xs:time" str
@@ -216,7 +216,7 @@
           (fn (k options)))))
     request))
 
-(defn describe-request-options
+(defn request-options->map
   "Given a RequestOptions object, returns a map describing those
   request options."
   [req-opts]
@@ -394,14 +394,14 @@
                                    transaction-mode transaction-timeout]}]
    (let [session (create-session* db-info content-source)]
      (when (map? default-request-options)
-       (.setDefaultRequestOptions session (request-options default-request-options)))
+       (.setDefaultRequestOptions session (make-request-options default-request-options)))
      (when (instance? Logger logger)
        (.setLogger session logger))
      ;; XXX the following is not the strictest test!
      (when (instance? Object user-object)
        (.setUserObject session user-object))
      (when (keyword? transaction-mode)
-       (.setTransactionMode session (transaction-modes transaction-mode)))
+       (.setTransactionMode session (->transaction-mode transaction-mode)))
      (when (integer? transaction-timeout)
        (.setTransactionTimeout session transaction-timeout))
      session)))
@@ -456,7 +456,7 @@
    :closed? (.isClosed session) ;; TODO maybe create (defn closed? [session] ...) ? Except it wouldn't be specific to Session in this ns, and ResultSequence also has isClosed, so it's ambiguous.
    :cached-transaction-timeout (.getCachedTxnTimeout session)
    :transaction-timeout (.getTransactionTimeout session)
-   :transaction-mode ((clojure.set/map-invert transaction-modes)
+   :transaction-mode ((clojure.set/map-invert ->transaction-mode)
                       (.getTransactionMode session))})
 
 
@@ -796,7 +796,7 @@
               (reduce (fn [permissions-acc permission]
                         (conj permissions-acc
                               (ContentPermission.
-                               (content-capability (val (first permission)))
+                               (->content-capability (val (first permission)))
                                (key (first permission)))))
                       []
                       permissions)))
@@ -813,7 +813,7 @@
     (let [xs [[:buffer-size #(.setBufferSize cco %)]
               [:collections #(.setCollections cco (into-array String %))]
               [:encoding    #(.setEncoding cco %)]
-              [:format      #(.setFormat cco (doc-format %))]
+              [:format      #(.setFormat cco (->doc-format %))]
               [:graph       #(.setGraph cco %)]
               [:language    #(.setLanguage cco %)]
               [:locale      #(.setLocale cco %)]
@@ -821,7 +821,7 @@
               [:permissions #(.setPermissions cco (make-content-permissions %))]
               [:placement-keys      #(.setPlaceKeys cco %)]
               [:quality             #(.setQuality cco %)]
-              [:repair-level        #(.setRepairLevel cco (doc-repair-level %))]
+              [:repair-level        #(.setRepairLevel cco (->doc-repair-level %))]
               [:resolve-buffer-size #(.setResolveBufferSize cco %)]
               [:resolve-entities    #(.setResolveEntities cco %)]
               [:temporal-collection #(.setTemporalCollection cco %)]]]
@@ -830,12 +830,12 @@
           (fn x))))
     cco))
 
-(defn describe-content-creation-options
+(defn content-creation-options->map
   [opts]
   {:buffer-size (.getBufferSize opts)
    :collections (mapv #(.toString %) (.getCollections opts))
    :encoding (.getEncoding opts)
-   :format ((clojure.set/map-invert doc-format) (.getFormat opts))
+   :format ((clojure.set/map-invert ->doc-format) (.getFormat opts))
    :graph (.getGraph opts)
    :language (.getLanguage opts)
    :locale (.getLocale opts)
@@ -844,7 +844,7 @@
                                  (keyword (.toString (.getCapability %))))
                       (.getPermissions opts))
    :quality (.getQuality opts)
-   :repair-level ((clojure.set/map-invert doc-repair-level) (.getRepairLevel opts))
+   :repair-level ((clojure.set/map-invert ->doc-repair-level) (.getRepairLevel opts))
    :resolve-buffer-size (.getResolveBufferSize opts)
    :resolve-entities (.getResolveEntities opts)
    :temporal-collection (.getTemporalCollection opts)})
