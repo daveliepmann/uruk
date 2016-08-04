@@ -75,38 +75,38 @@
 (deftest default-session-options
   (testing "A session with no explicitly-set options must have default options"
     (testing "basic session creation with full database specified"
-      (is-default-session-options? (session-options (create-session db))))
+      (is-default-session-options? (describe-session-options (create-session db))))
     (testing "session creation with URI content source"
-      (is-default-session-options? (session-options
+      (is-default-session-options? (describe-session-options
                                     (create-session
                                      db (make-uri-content-source "xdbc://localhost:8383/")
                                      {}))))
     (testing "session creation with URI content source using options"
-      (is-default-session-options? (session-options
+      (is-default-session-options? (describe-session-options
                                     (create-session
                                      db (make-uri-content-source "xdbc://localhost:8383/"
                                                                  {:preemptive-auth true})
                                      {}))))
     (testing "session creation with hosted content source"
-      (is-default-session-options? (session-options
+      (is-default-session-options? (describe-session-options
                                     (create-session
                                      db (make-hosted-content-source "localhost" 8383)
                                      {}))))
     (testing "session creation with hosted content source using options"
-      (is-default-session-options? (session-options
+      (is-default-session-options? (describe-session-options
                                     (create-session
                                      db (make-hosted-content-source "localhost" 8383
                                                                     {:content-base "TutorialDB"})
                                      {}))))
     ;; TODO once we want to delve into extreme complexity of ConnectionProvider
     ;; (testing "session creation with connectionProvider content source"
-    ;;   (is-default-session-options? (session-options
+    ;;   (is-default-session-options? (describe-session-options
     ;;                                 (create-session
     ;;                                  db (make-cp-content-source ...)
     ;;                                  {}))))
     ;; TODO once we want to delve into extreme complexity of ConnectionProvider
     ;; (testing "session creation with connectionProvider content source with options"
-    ;;   (is-default-session-options? (session-options
+    ;;   (is-default-session-options? (describe-session-options
     ;;                                 (create-session
     ;;                                  db (make-cp-content-source ...)
     ;;                                  {}))))
@@ -132,37 +132,37 @@
                 :transaction-timeout 56
                 :transaction-mode :query}]
       (testing "with standard database map"
-        (as-expected-session-options? (session-options
+        (as-expected-session-options? (describe-session-options
                                        (create-session db opts))
                                       opts))
       (testing "with uri content source"
-        (as-expected-session-options? (session-options
+        (as-expected-session-options? (describe-session-options
                                        (create-session db
                                                        (make-uri-content-source "xdbc://localhost:8383/")
                                                        opts))
                                       opts))
       (testing "with uri content source using options"
-        (as-expected-session-options? (session-options
+        (as-expected-session-options? (describe-session-options
                                        (create-session
                                         db (make-uri-content-source "xdbc://localhost:8383/"
                                                                     {:preemptive-auth false})
                                         opts))
                                       opts))
       (testing "with hosted content source"
-        (as-expected-session-options? (session-options
+        (as-expected-session-options? (describe-session-options
                                        (create-session
                                         db (make-hosted-content-source "localhost" 8383)
                                         opts))
                                       opts))
       (testing "with hosted content source using content base"
-        (as-expected-session-options? (session-options
+        (as-expected-session-options? (describe-session-options
                                        (create-session
                                         db (make-hosted-content-source "localhost" 8383
                                                                        {:content-base "TutorialDB"})
                                         opts))
                                       opts))
       (testing "with hosted content source using user, password, content-base"
-        (as-expected-session-options? (session-options
+        (as-expected-session-options? (describe-session-options
                                        (create-session
                                         db (make-hosted-content-source "localhost" 8383
                                                                        {:user "rest-admin"
@@ -171,7 +171,7 @@
                                         opts))
                                       opts))
       (testing "with hosted content source using user and password"
-        (as-expected-session-options? (session-options
+        (as-expected-session-options? (describe-session-options
                                        (create-session
                                         db (make-hosted-content-source "localhost" 8383
                                                                        {:user "rest-admin"
@@ -179,7 +179,7 @@
                                         opts))
                                       opts))
       ;; TODO once we want to delve into extreme complexity of ConnectionProvider
-      ;; (as-expected-session-options? (session-options
+      ;; (as-expected-session-options? (describe-session-options
       ;;                                (create-session
       ;;                                 db (make-cp-content-source ...)
       ;;                                 opts))
@@ -267,7 +267,7 @@
 ;;;; Content Source from URI
 
 ;; (comment
-;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
+;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
 ;;                                     :user "rest-admin" :password "x"
 ;;                                     :content-base "TutorialDB"}
 ;;                                    {} (uri-content-source "xdbc://localhost:8383/"
@@ -306,7 +306,7 @@
 
 ;; TODO with SSLContext
 ;; (comment
-;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
+;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
 ;;                                     :user "rest-admin" :password "x"
 ;;                                     :content-base "TutorialDB"}
 ;;                                    (hosted-content-source "localhost" 8383
@@ -314,7 +314,7 @@
 ;;                                                           (security-options TODO))
 ;;                                    {}))
 
-;;   (session-options (create-session {:uri "xdbc://localhost:8383/"
+;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
 ;;                                     :user "rest-admin" :password "x"
 ;;                                     :content-base "TutorialDB"}
 ;;                                    (managed-content-source connection-provider ;; TODO implement https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/ConnectionProvider.html interface

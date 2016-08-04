@@ -417,7 +417,7 @@
 ;;      }
 ;;     ))
 
-(defn session-options
+(defn describe-session-options
   "Returns a map describing all options on the given Session object."
   [session]
   {:default-request-options (.getDefaultRequestOptions session)
