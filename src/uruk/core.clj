@@ -6,16 +6,16 @@
             [clojure.data.xml :as xml]
             [slingshot.slingshot :as sling])
   (:import [java.util.logging Logger]
+           java.net.URI
            [com.marklogic.xcc
             Session$TransactionMode
-            RequestOptions
+            RequestOptions SecurityOptions
             ContentCreateOptions ContentPermission ContentCapability
-            ContentSourceFactory ContentFactory
+            ContentSource ContentSourceFactory ContentFactory
             DocumentFormat DocumentRepairLevel
-            ValueFactory]
+            ValueFactory Version]
            [com.marklogic.xcc.types ValueType]
-           [com.marklogic.xcc Version]
-           java.net.URI))
+           [com.marklogic.xcc.spi ConnectionProvider]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Enumerations and classes.
@@ -239,10 +239,102 @@
 ;;;; Session management
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn make-security-options
+  "Given an SSLContext object and, optionally, a configuration map
+  describing cipher suites and/or protocols to enable, returns a
+  MarkLogic SecurityOptions object configured accordingly, to be used
+  in session or content source creation."
+  ([ssl-context] (make-security-options ssl-context nil))
+  ([ssl-context {:keys [protocols cipher-suites]}]
+   (let [sec-opts (SecurityOptions. ssl-context)]
+     (when (seq protocols)
+       (.setEnabledProtocols sec-opts (into-array String protocols)))
+     (when (seq cipher-suites)
+       (.setEnabledCipherSuites sec-opts (into-array String cipher-suites)))
+     sec-opts)))
+
+(defn configure-content-source
+  "Given a ContentSource object, modifies that object according to the
+  given map of configuration options."
+  [content-source {:keys [default-logger preemptive-auth]}]
+  (when (instance? Logger default-logger)
+    (.setDefaultLogger content-source default-logger))
+  (when (or (true? preemptive-auth)
+            (false? preemptive-auth))
+    (.setAuthenticationPreemptive content-source preemptive-auth))
+  content-source)
+
+(defn make-uri-content-source
+  "Return a ContentSource object according to the given `uri` and,
+  optionally, a configuration map describing a SecurityOptions object,
+  default Logger object, and boolean flag for whether basic
+  authentication should be attempted preemptively. Accepts URI or
+  string for `uri`."
+  ([uri] (make-uri-content-source uri nil))
+  ([uri {:keys [security-options default-logger preemptive-auth]}]
+   (configure-content-source (if (instance? SecurityOptions security-options)
+                               (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                                                        uri (URI. uri))
+                                                                      security-options)
+                               (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                                                        uri (URI. uri))))
+                             {:default-logger default-logger
+                              :preemptive-auth preemptive-auth})))
+
+(defn make-hosted-content-source
+  "Returna a ContentSource object according to the given `host` String
+  and integer `port`, and optionally a configuration map defining the
+  `user` and `password`, `content-base`, `security-options`, and/or
+  default Logger object and boolean flag for whether basic
+  authentication should be attempted preemptively."
+  ([host port] ;; no default login credentials
+   (make-hosted-content-source host port nil))
+  ([host port {:keys [user password content-base security-options
+                      default-logger preemptive-auth]}]
+   (configure-content-source (ContentSourceFactory/newContentSource
+                              host port
+                              ;; user and password must be together
+                              (when (seq user)
+                                user)
+                              (when (seq user)
+                                password)
+                              (when (seq content-base)
+                                content-base)
+                              (when (instance? SecurityOptions security-options)
+                                security-options))
+                             {:default-logger default-logger
+                              :preemptive-auth preemptive-auth})))
+
+(defn make-cp-content-source
+  "Given a ConnectionProvider, user, password, content-base, and an
+  optional configuration map, returns a ContentSource object that will
+  use the provided ConnectionProvider instance to obtain server
+  connections.
+
+  WARNING from the Javadoc: '[This function] should only be used by
+  advanced users. A misbehaving ConnectionProvider implementation can
+  result in connection failures and potentially even data loss. Be
+  sure you know what you're doing.'"
+  ([cxn-provider user password content-base]
+   (make-cp-content-source cxn-provider user password content-base nil))
+  ([cxn-provider user password content-base {:keys [default-logger
+                                                    preemptive-auth]}]
+   (when-not (instance? ConnectionProvider cxn-provider)
+     (throw (IllegalArgumentException.
+             "Content Source cxn-provider parameter must be a ConnectionProvider")))
+   (configure-content-source (ContentSourceFactory/newContentSource cxn-provider
+                                                                    user password
+                                                                    content-base)
+                             {:default-logger default-logger
+                              :preemptive-auth preemptive-auth})))
+
 (defn- create-session*
-  "Creates session, given map of database info."
-  [{:keys [uri user password content-base]}]
-  (let [cs (ContentSourceFactory/newContentSource (URI. uri))]
+  "Creates session, given map of database info. If complex connection
+  options are necessary, pass in a preconfigured content source."
+  [{:keys [uri user password content-base]} & [content-source]]
+  (let [cs (if (instance? ContentSource content-source)
+             content-source
+             (ContentSourceFactory/newContentSource (URI. uri)))]
     (cond
       (and (nil? content-base)
            (or (nil? user)
@@ -275,12 +367,24 @@
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html
   for valid options. (Note that request options are distinct from
   session options, though *default* request options can be set for the
-  session.)"
+  session.)
+
+  If optional `content-source` is passed, the Session is created from
+  the given ContentSource rather than creating one from the database
+  info URI."
   ([db-info]
    (create-session* db-info))
   ([db-info {:keys [default-request-options logger user-object
                     transaction-mode transaction-timeout]}]
-   (let [session (create-session* db-info)]
+   (create-session db-info
+                   nil
+                   {:default-request-options default-request-options
+                    :logger logger :user-object user-object
+                    :transaction-mode transaction-mode
+                    :transaction-timeout transaction-timeout}))
+  ([db-info content-source {:keys [default-request-options logger user-object
+                                   transaction-mode transaction-timeout]}]
+   (let [session (create-session* db-info content-source)]
      (when (map? default-request-options)
        (.setDefaultRequestOptions session (request-options default-request-options)))
      (when (instance? Logger logger)
@@ -294,12 +398,36 @@
        (.setTransactionTimeout session transaction-timeout))
      session)))
 
-(defn session-options
+;; TODO require privilege
+;; (defn session-cb-metadata
+;;   "TODO"
+;;   [session]
+;;   (let [cbmd (.getContentbaseMetaData session)]
+;;     {:session (.getSession cbmd) ;; XXX unnecessary...right?
+;;      :user (.getUser cbmd)
+;;      :cb-id (.getContentBaseId cbmd)
+;;      :cb-name (.getContentBaseName cbmd)
+;;      :driver-major-version (.getDriverMajorVersion cbmd)
+;;      :driver-minor-version (.getDriverMinorVersion cbmd)
+;;      :driver-patch-version (.getDriverPatchVersion cbmd)
+;;      :driver-version (.getDriverVersionString cbmd)
+;;      ;; :server-major-version (.getServerMajorVersion cbmd)
+;;      ;; :server-minor-version (.getServerMinorVersion cbmd)
+;;      ;; :server-patch-version (.getServerPatchVersion cbmd)
+;;      ;; :server-version (.getServerVersionString cbmd)
+;;      ;; :forest-ids (seq (.getForestIds cbmd))
+;;      ;; :forest-maps (.getForestMap cbmd)
+;;      ;; :forest-names (seq (.getForestNames cbmd))
+;;      }
+;;     ))
+
+(defn describe-session-options
   "Returns a map describing all options on the given Session object."
   [session]
   {:default-request-options (.getDefaultRequestOptions session)
    :effective-request-options (.getEffectiveRequestOptions session)
    :logger (.getLogger session)
+   ;; :contentbase-metadata (session-cb-metadata session) TODO
    :xaresource (.getXAResource session)
    :user-object (.getUserObject session)
    :transaction-timeout (.getTransactionTimeout session)
