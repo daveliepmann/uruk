@@ -103,143 +103,145 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Session options
+;;;; Session configuration
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn is-default-session-options?
-  "True if given session options conform to the expected default
-  SessionOptions; false otherwise."
-  [session-options]
-  (and (is (instance? RequestOptions (:default-request-options session-options)))
-       (is (instance? RequestOptions (:effective-request-options session-options)))
-       (is (instance? Logger (:logger session-options))) ;; FIXME need better test
-       (is (nil? (:user-object session-options)))
-       (is (= 0 (:transaction-timeout session-options)))
-       (is (nil? (:transaction-mode session-options)))))
+(defn is-default-session-config?
+  "True if given session configuration conforms to the expected
+  default Session; false otherwise."
+  [session]
+  (and (is (instance? RequestOptions (:default-request-options session)))
+       (is (instance? RequestOptions (:effective-request-options session)))
+       (is (instance? Logger (:logger session))) ;; FIXME need better test
+       (is (nil? (:user-object session)))
+       (is (= 0 (:transaction-timeout session)))
+       (is (nil? (:transaction-mode session)))))
 
-(deftest default-session-options
-  (testing "A session with no explicitly-set options must have default options"
+(deftest default-session-config
+  (testing "A session with no explicitly-set configuration must have default configuration"
     (testing "basic session creation with full database specified"
-      (is-default-session-options? (session->map (create-session db))))
+      (is-default-session-config? (session->map (create-session db))))
     (testing "session creation with URI content source"
-      (is-default-session-options? (session->map
-                                    (create-session
-                                     db (make-uri-content-source "xdbc://localhost:8383/")
-                                     {}))))
+      (is-default-session-config? (session->map
+                                   (create-session
+                                    db (make-uri-content-source "xdbc://localhost:8383/")
+                                    {}))))
     (testing "session creation with URI content source using options"
-      (is-default-session-options? (session->map
-                                    (create-session
-                                     db (make-uri-content-source
-                                         "xdbc://localhost:8383/"
-                                         {:preemptive-auth false
-                                          :default-logger (Logger/getLogger "foobar")})))))
+      (is-default-session-config? (session->map
+                                   (create-session
+                                    db (make-uri-content-source
+                                        "xdbc://localhost:8383/"
+                                        {:preemptive-auth false
+                                         :default-logger (Logger/getLogger "foobar")})))))
     (testing "session creation with hosted content source"
-      (is-default-session-options? (session->map
-                                    (create-session
-                                     db (make-hosted-content-source "localhost" 8383)
-                                     {}))))
+      (is-default-session-config? (session->map
+                                   (create-session
+                                    db (make-hosted-content-source "localhost" 8383)
+                                    {}))))
     (testing "session creation with hosted content source using options"
-      (is-default-session-options? (session->map
-                                    (create-session
-                                     db (make-hosted-content-source "localhost" 8383
-                                                                    {:content-base "TutorialDB"})
-                                     {}))))
+      (is-default-session-config? (session->map
+                                   (create-session
+                                    db (make-hosted-content-source "localhost" 8383
+                                                                   {:content-base "TutorialDB"})
+                                    {}))))
     ;; TODO once we want to delve into extreme complexity of ConnectionProvider
     ;; (testing "session creation with connectionProvider content source"
-    ;;   (is-default-session-options? (session->map
+    ;;   (is-default-session-config? (session->map
     ;;                                 (create-session
     ;;                                  db (make-cp-content-source ...)
     ;;                                  {}))))
     ;; TODO once we want to delve into extreme complexity of ConnectionProvider
     ;; (testing "session creation with connectionProvider content source with options"
-    ;;   (is-default-session-options? (session->map
+    ;;   (is-default-session-config? (session->map
     ;;                                 (create-session
     ;;                                  db (make-cp-content-source ...)
     ;;                                  {}))))
     ))
 
 ;; (deftest accept-only-valid-session-options
-;;   (testing "Invalid session options should throw an error"
+;;   (testing "Invalid session config options should throw an error"
 ;;     (let [sess-opts (session-options
 ;;                      (create-session db
 ;;                                      {:this-does-not-exist "irrelevant string"}))])))
 
 
-(defn as-expected-session-options?
-  [session-options expected-options]
-  (and (is (= (:timeout-millis (:default-request-options expected-options))
-              (.getTimeoutMillis (:default-request-options session-options))
-              (.getTimeoutMillis (:effective-request-options session-options))))
-       (is (instance? Logger (:logger session-options))) ;; TODO test Logger better--name?
-       (is (empty? (:user-object session-options))) ;; XXX is this all we can test user-object?
-       (is (= (:transaction-timeout session-options)
-              (:transaction-timeout expected-options)))
-       (is (= (:transaction-mode session-options)
-              (:transaction-mode expected-options)))))
+(defn as-expected-session-config?
+  "True if given `session` is configured as according to
+  `expected-config`; false otherwise."
+  [session expected-config]
+  (and (is (= (:timeout-millis (:default-request-options expected-config))
+              (.getTimeoutMillis (:default-request-options session))
+              (.getTimeoutMillis (:effective-request-options session))))
+       (is (instance? Logger (:logger session))) ;; TODO test Logger better--name?
+       (is (empty? (:user-object session))) ;; XXX is this all we can test user-object?
+       (is (= (:transaction-timeout session)
+              (:transaction-timeout expected-config)))
+       (is (= (:transaction-mode session)
+              (:transaction-mode expected-config)))))
 
-(deftest set-session-options
-  (testing "A session with explicitly-set options must reflect those options"
+(deftest set-session-config
+  (testing "A session with explicitly-set configuration must reflect that configuration"
     (let [opts {:default-request-options {:timeout-millis 75}
                 ;; TODO test default Req Opts more?
                 ;; TODO test effective Req Opts more?
                 :transaction-timeout 56
                 :transaction-mode :query}]
       (testing "with standard database map"
-        (as-expected-session-options? (session->map
-                                       (create-session db opts))
-                                      opts))
+        (as-expected-session-config? (session->map
+                                      (create-session db opts))
+                                     opts))
       (testing "with uri content source"
-        (as-expected-session-options? (session->map
-                                       (create-session db
-                                                       (make-uri-content-source "xdbc://localhost:8383/")
-                                                       opts))
-                                      opts))
+        (as-expected-session-config? (session->map
+                                      (create-session db
+                                                      (make-uri-content-source "xdbc://localhost:8383/")
+                                                      opts))
+                                     opts))
       (testing "with uri content source using options"
-        (as-expected-session-options? (session->map
-                                       (create-session
-                                        db (make-uri-content-source "xdbc://localhost:8383/"
-                                                                    {:preemptive-auth false})
-                                        opts))
-                                      opts))
+        (as-expected-session-config? (session->map
+                                      (create-session
+                                       db (make-uri-content-source "xdbc://localhost:8383/"
+                                                                   {:preemptive-auth false})
+                                       opts))
+                                     opts))
       (testing "with hosted content source"
-        (as-expected-session-options? (session->map
-                                       (create-session
-                                        db (make-hosted-content-source "localhost" 8383)
-                                        opts))
-                                      opts))
+        (as-expected-session-config? (session->map
+                                      (create-session
+                                       db (make-hosted-content-source "localhost" 8383)
+                                       opts))
+                                     opts))
       (testing "with hosted content source using content base"
-        (as-expected-session-options? (session->map
-                                       (create-session
-                                        db (make-hosted-content-source "localhost" 8383
-                                                                       {:content-base "TutorialDB"})
-                                        opts))
-                                      opts))
+        (as-expected-session-config? (session->map
+                                      (create-session
+                                       db (make-hosted-content-source "localhost" 8383
+                                                                      {:content-base "TutorialDB"})
+                                       opts))
+                                     opts))
       (testing "with hosted content source using user, password, content-base"
-        (as-expected-session-options? (session->map
-                                       (create-session
-                                        db (make-hosted-content-source "localhost" 8383
-                                                                       {:user "rest-admin"
-                                                                        :password "x"
-                                                                        :content-base "TutorialDB"})
-                                        opts))
-                                      opts))
+        (as-expected-session-config? (session->map
+                                      (create-session
+                                       db (make-hosted-content-source "localhost" 8383
+                                                                      {:user "rest-admin"
+                                                                       :password "x"
+                                                                       :content-base "TutorialDB"})
+                                       opts))
+                                     opts))
       (testing "with hosted content source using user and password"
-        (as-expected-session-options? (session->map
-                                       (create-session
-                                        db (make-hosted-content-source "localhost" 8383
-                                                                       {:user "rest-admin"
-                                                                        :password "x"})
-                                        opts))
-                                      opts))
+        (as-expected-session-config? (session->map
+                                      (create-session
+                                       db (make-hosted-content-source "localhost" 8383
+                                                                      {:user "rest-admin"
+                                                                       :password "x"})
+                                       opts))
+                                     opts))
       ;; TODO once we want to delve into extreme complexity of ConnectionProvider
-      ;; (as-expected-session-options? (session->map-options
+      ;; (as-expected-session-config? (session->map
       ;;                                (create-session
       ;;                                 db (make-cp-content-source ...)
       ;;                                 opts))
       ;;                               opts)
       )))
 
-;; TODO accept-only-valid-session-options
+;; TODO accept-only-valid-session-config
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
