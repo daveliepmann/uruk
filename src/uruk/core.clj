@@ -252,6 +252,15 @@
        (.setEnabledCipherSuites sec-opts (into-array String cipher-suites)))
      sec-opts)))
 
+(defn security-options->map
+  "Given a SecurityOptions object, returns a map describing its
+  configuration."
+  [security-options]
+  {:hashcode (.hashCode security-ptions)
+   :cipher-suites (.getEnabledCipherSuites security-ptions)
+   :protocols (.getEnabledProtocols security-ptions)
+   :ssl-context (.getSslContext security-ptions)})
+
 (defn configure-content-source
   "Given a ContentSource object, modifies that object according to the
   given map of configuration options."
