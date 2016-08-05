@@ -217,16 +217,14 @@ See `uruk.core/valid-content-creation-options`, which is a Clojurey version of t
 
 
 ## TODO
-  - more tests
-  - more examples in README
-  - use clojure.spec?
+  - move */examples/types.clj* to *core_test.clj*
+  - use clojure.spec once Clojure 1.9 is stable
   - ensure insert-element robustly covers needed use cases
-  - with-session macro?
-  - is there MarkLogic facility to automatically parse XQuery for XDM variable types?
-  - [JNDI support](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html)
-  - [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) support; note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
+  - evaluate need for `with-session` macro?
+  - implement REx to automatically parse XQuery for XDM variable types?
+  - future: [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html) support
+  - future: [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) support; note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
   - [ResultChannelName](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ResultChannelName.html)?
-  - fully support all contentSourceFactory methods for connection
 
 ## License
 
