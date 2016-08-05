@@ -17,8 +17,7 @@
 
 (deftest default-request-options
   (testing "Creating a request with no explicitly-set options must reflect default options"
-    (is (= (let [req-opts (request-options {})]
-             (describe-request-options req-opts))
+    (is (= (request-options->map (make-request-options {}))
            {:timezone nil,
             :cache-result true,
             :locale nil,
@@ -65,23 +64,23 @@
 (deftest sample-request-options
   (testing "Set sample option on request"
     (is (= 6000
-           (.getTimeoutMillis (request-options {:timeout-millis 6000}))))))
+           (.getTimeoutMillis (make-request-options {:timeout-millis 6000}))))))
 
 (deftest roundtrip-request-options
   (testing "All request options must be set as indicated"
-    (is (= (let [req-opts (request-options {:timezone (TimeZone/getTimeZone "Pacific/Chuuk")
-                                            :cache-result false,
-                                            :locale (Locale. "ru"),
-                                            :request-time-limit 156,
-                                            :default-xquery-version "xquery version \"0.9-ml\";",
-                                            :timeout-millis 763,
-                                            :query-language "Elvish"
-                                            :result-buffer-size 23,
-                                            :effective-point-in-time 14701453805890320
-                                            :request-name "JigoroKano",
-                                            :auto-retry-delay-millis 991,
-                                            :max-auto-retry 3})]
-             (describe-request-options req-opts))
+    (is (= (let [req-opts (make-request-options {:timezone (TimeZone/getTimeZone "Pacific/Chuuk")
+                                                 :cache-result false,
+                                                 :locale (Locale. "ru"),
+                                                 :request-time-limit 156,
+                                                 :default-xquery-version "xquery version \"0.9-ml\";",
+                                                 :timeout-millis 763,
+                                                 :query-language "Elvish"
+                                                 :result-buffer-size 23,
+                                                 :effective-point-in-time 14701453805890320
+                                                 :request-name "JigoroKano",
+                                                 :auto-retry-delay-millis 991,
+                                                 :max-auto-retry 3})]
+             (request-options->map req-opts))
            {:timezone (TimeZone/getTimeZone "Pacific/Chuuk")
             :cache-result false,
             :locale (Locale. "ru"),
@@ -264,7 +263,7 @@
             :quality 0
             :namespace nil
             :temporal-collection nil}
-           (describe-content-creation-options (content-creation-options {}))))))
+           (content-creation-options->map (content-creation-options {}))))))
 
 (deftest content-options-roundtrip
   (testing "Round-trip options through creation and description"
@@ -285,7 +284,7 @@
                     :resolve-entities true
                     :temporal-collection "my-temp"}]
           (= opts
-             (describe-content-creation-options (content-creation-options opts)))))))
+             (content-creation-options->map (content-creation-options opts)))))))
 
 (deftest accept-only-valid-content-options
   (testing "Content Options that don't exist must raise an error"
@@ -301,9 +300,10 @@
   (testing "Non-string variables passed to request object are not converted to strings"
     (is (instance? com.marklogic.xcc.types.impl.DocumentImpl
                    (-> (with-open [session (create-session db)]
-                         (.getVariables (#'uruk.core/request-obj (.newAdhocQuery session "hello world")
-                                                                 nil {:derp {:value "<foo/>"
-                                                                             :type :document}})))
+                         (.getVariables (#'uruk.core/make-request-obj
+                                         (.newAdhocQuery session "hello world")
+                                         nil {:derp {:value "<foo/>"
+                                                     :type :document}})))
                        first
                        .getValue)))))
 
@@ -408,7 +408,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (comment
-;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
+;;   (session->map (create-session {:uri "xdbc://localhost:8383/"
 ;;                                     :user "rest-admin" :password "x"
 ;;                                     :content-base "TutorialDB"}
 ;;                                    {} (uri-content-source "xdbc://localhost:8383/"
