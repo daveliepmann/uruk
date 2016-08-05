@@ -1,7 +1,7 @@
 (ns uruk.core
   "Marklogic XCC core functions: session management, querying, type
   conversion, transactions."
-  (:require [clojure.set]
+  (:require clojure.set
             [clojure.data.json :as json]
             [clojure.data.xml :as xml]
             [slingshot.slingshot :as sling])
@@ -90,62 +90,294 @@
   (hash-map (.toString (.getName xdm-var))
             (.toString (.getValue xdm-var))))
 
-(def xcc-type->conv-fn
-  "Default mapping from MarkLogic XCC types (e.g. those that might be
-  returned in a query's result set) to Clojure functions intended to
-  convert to Clojure types. See
-  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html"
-  {"array-node()" java-json->clj-json ;; ArrayNode
-   "boolean-node()" #(.asBoolean %)  ;; BooleanNode
+(defn ->xml-str
+  "Assumes that its input is valid XML in some format, returning that
+  XML in its String representation. Accepts String, hiccup-style
+  vectors, and clojure.data.xml.Element."
+  [xml]
+  (cond
+    (string? xml) xml
+    (vector? xml) (xml/emit-str (xml/sexp-as-element xml))
+    (instance? clojure.data.xml.Element xml) (xml/emit-str xml)))
 
-   "cts:box" #(.asString %) ;; would be nice to convert box to seq of 4 numbers, unless that is disrupted by other element types
-   "cts:circle" #(.asString %)
-   "cts:point" #(.asString %)
-   "cts:polygon" #(.asString %)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; XCC type table.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   "json:array" java-json->clj-json ;; JSArray
-   "json:object" java-json->clj-json ;; JSObject
+(def xcc-types
+  "Lookup table for XCC type information.
 
-   ;; JsonItem TODO
-   "null-node()" java-json->clj-json ;; NullNode
-   "number-node()" java->num ;; NumberNode
-   "object-node()" java-json->clj-json ;; ObjectNode
+  Includes all Clojure-relevant info about XCC types (and XML schema
+  types relevant to MarkLogic XCC). Provides functions for conversion
+  to and from XCC types and XdmVariable-suitable objects from Clojure.
 
-   ;; XdmAtomic TODO
-   "attribute()" #(.asString %) ;; XdmAttribute
-   "binary()" #(.asBinaryData %) ;; XdmBinary
-   "comment()" #(.asString %) ;; XdmComment
-   "document-node()" #(.asString %) ;; XdmDocument
-   "duration()" #(.toString %) ;; XdmDuration XXX may only ever come through as xs:duration
-   "element()" #(.asString %) ;; XdmElement
-   ;; XdmItem TODO
-   "text()" #(.asString %) ;; XdmText
-   "variable()" xdm-var->str ;; XdmVariable -- XXX unknown if the key used matches getValueType
+  Values are keyed by keyword describing the XCC type. Each value is
+  organized as follows:
 
-   "xs:anyURI" str
-   "xs:base64Binary" #(.asBinaryData %) ;; XSBase64Binary
-   "xs:boolean" #(.asPrimitiveBoolean %)
-   "xs:date" str
-   "xs:dateTime" str
-   "xs:dayTimeDuration" str
-   "xs:decimal" java->num
-   "xs:double" java->num
-   "xs:duration" str
-   "xs:float" java->num
-   ;; Maybe strip hyphens from all Gregorian date-parts?
-   ;; or make conform to a particular date type?
-   "xs:gDay" str
-   "xs:gMonth" str
-   "xs:gMonthDay" str
-   "xs:gYear" str
-   "xs:gYearMonth" str
-   "xs:hexBinary" str ;; looks OK but test with real doc
-   "xs:integer" java->num
-   "xs:QName" str
-   "xs:string" str
-   "xs:time" str
-   "xs:untypedAtomic" str ;; NB: also referred to as "xdt:untypedAtomic" in type listing
-   "xs:yearMonthDuration" str})
+  `:ml->clj` maps to the function used to convert from MarkLogic to
+  Clojure
+
+  `:clj->xdm` maps to the function used to convert from Clojure to a
+  value appropriate for use in an XDM variable
+
+  `:xml-name` maps to the string used to refer to this type in
+  XQuery (its XML schema name)
+
+  `:xcc-type` maps to the corresponding
+  com.marklogic.xcc.types.ValueType field"
+  {:attribute {;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type 
+               :ml->clj #(.asString %)
+               :clj->xdm identity ;; doesn't seem to be implemented by ValueFactory: "java.lang.InternalError Unrecognized valueType: attribute()"
+               :xml-name "attribute()"
+               :xcc-type ValueType/ATTRIBUTE}
+   :binary {:ml->clj #(.asBinaryData %)
+            :clj->xdm identity ;; TODO
+            :xml-name "binary()"
+            :xcc-type ValueType/BINARY}
+
+   :array-node {:ml->clj java-json->clj-json
+                :clj->xdm #(ValueFactory/newArrayNode (json/write-str %))
+                :xml-name "array-node()"
+                :xcc-type ValueType/ARRAY_NODE}
+   :boolean-node {:ml->clj #(.asBoolean %)
+                  :clj->xdm #(-> (com.fasterxml.jackson.databind.node.JsonNodeFactory/instance)
+                                 (.booleanNode %)
+                                 ValueFactory/newBooleanNode)
+                  :xml-name "boolean-node()"
+                  :xcc-type ValueType/BOOLEAN_NODE}
+   :comment {:ml->clj #(.asString %)
+             :clj->xdm identity ;; TODO, also really :comment-node
+             :xml-name "comment()"
+             :xcc-type ValueType/COMMENT} ;; FIXME if passed as variable :type, causes: com.marklogic.xcc.exceptions.XQueryException: XDMP-LEXVAL: xs:QName("comment()") -- Invalid lexical value "comment()"
+
+   :cts-box {:ml->clj #(.asString %) ;; would be nice to convert box to seq of 4 numbers, unless that is disrupted by other element types
+             :clj->xdm str
+             :xml-name "cts:box"
+             :xcc-type ValueType/CTS_BOX}
+   :cts-circle {:ml->clj #(.asString %)
+                :clj->xdm #(let [[radius [latitude longitude]] %]
+                             (.asString (ValueFactory/newCtsCircle
+                                         (str radius)
+                                         (ValueFactory/newCtsPoint (str latitude)
+                                                                   (str longitude)))))
+                :xml-name "cts:circle"
+                :xcc-type ValueType/CTS_CIRCLE}
+   :cts-point {:ml->clj #(.asString %)
+               :clj->xdm #(str (first %) ","
+                               (second %)) ;; Expects a 2-number sequence
+               :xml-name "cts:point"
+               :xcc-type ValueType/CTS_POINT}
+   :cts-polygon {:ml->clj #(.asString %)
+                 :clj->xdm #(let [vertices %]
+                              ;; Expects a sequence of 2-element sequences, each
+                              ;; describing successive vertices (points) of the
+                              ;; polygon
+                              (.asString (ValueFactory/newCtsPolygon
+                                          (mapv (fn [latitude longitude]
+                                                  (ValueFactory/newCtsPoint (str latitude)
+                                                                            (str longitude)))
+                                                vertices))))
+                 :xml-name "cts:polygon"
+                 :xcc-type ValueType/CTS_POLYGON}
+
+   :document {:ml->clj #(.asString %) ;; XdmDocument
+              :clj->xdm ->xml-str
+              :xml-name "document-node()" ;; XXX key should be :document-node, really
+              :xcc-type ValueType/DOCUMENT}
+   :element {:ml->clj  #(.asString %)
+             :clj->xdm ->xml-str
+             :xml-name "element()"
+             :xcc-type ValueType/ELEMENT}
+
+   :js-array {:ml->clj java-json->clj-json
+              :clj->xdm #(ValueFactory/newJSArray (json/write-str %))
+              :xml-name "json:array"
+              :xcc-type ValueType/JS_ARRAY}
+   :js-object {:ml->clj java-json->clj-json
+               :clj->xdm #(ValueFactory/newJSObject (json/write-str %))
+               :xml-name "json:object"
+               :xcc-type ValueType/JS_OBJECT}
+
+   :node {:ml->clj str
+          :clj->xdm identity
+          :xml-name nil ;; TODO XXX ???
+          :xcc-type ValueType/NODE}
+   :null-node {:ml->clj java-json->clj-json
+               :clj->xdm nil
+               :xml-name "null-node()"
+               :xcc-type ValueType/NULL_NODE}
+   :number-node {:ml->clj java->num
+                 :clj->xdm str
+                 :xml-name "number-node()"
+                 :xcc-type ValueType/NUMBER_NODE}
+   :object-node {:ml->clj java-json->clj-json
+                 :clj->xdm #(ValueFactory/newObjectNode (json/write-str %))
+                 :xml-name "object-node()"
+                 :xcc-type ValueType/OBJECT_NODE}
+
+   :processing-instruction {:ml->clj str
+                            :clj->xdm str ;; TODO test?
+                            :xml-name nil ;; XXX ???
+                            :xcc-type ValueType/PROCESSING_INSTRUCTION}
+   :sequence {:ml->clj str
+              :clj->xdm identity ;; XXX WONTFIX -- see GitHub issue #8: "com.marklogic.xcc.exceptions.UnimplementedFeatureException - Setting variables that are sequences is not supported"
+              :xml-name nil ;; XXX ???
+              :xcc-type ValueType/SEQUENCE}
+   :text {;; FIXME causes XDMP-LEXVAL
+          :ml->clj #(.asString %)
+          :clj->xdm identity  ;; TODO, also really :text-node
+          :xml-name "text()"
+          :xcc-type ValueType/TEXT}
+   :variable {;; XdmVariable. Unknown if the key used matches getValueType.
+              :ml->clj xdm-var->str
+              :clj->xdm identity  ;; FIXME
+              :xml-name "variable()"
+              ;; FIXME
+              :xcc-type nil}
+
+   :xs-any-uri {:ml->clj str
+                :clj->xdm identity ;; TODO
+                :xml-name "xs:anyURI"
+                :xcc-type ValueType/XS_ANY_URI}
+   :xs-base64-binary {:ml->clj #(.asBinaryData %)
+                      :clj->xdm identity ;; TODO
+                      :xml-name "xs:base64Binary"
+                      :xcc-type ValueType/XS_BASE64_BINARY}
+   :xs-boolean {:ml->clj #(.asPrimitiveBoolean %)
+                :clj->xdm identity
+                :xml-name "xs:boolean"
+                :xcc-type ValueType/XS_BOOLEAN}
+
+   :xs-time {:ml->clj str
+             :clj->xdm identity ;; TODO
+             :xml-name "xs:time"
+             :xcc-type ValueType/XS_TIME}
+   :xs-date {:ml->clj str
+             :clj->xdm identity ;; TODO
+             :xml-name "xs:date"
+             :xcc-type ValueType/XS_DATE}
+   :xs-date-time {:ml->clj str
+                  :clj->xdm identity ;; TODO
+                  :xml-name "xs:dateTime"
+                  :xcc-type ValueType/XS_DATE_TIME}
+
+   ;; Numbers
+   :xs-integer {:ml->clj java->num
+                :clj->xdm identity
+                :xml-name "xs:integer"
+                :xcc-type ValueType/XS_INTEGER}
+   :xs-decimal {:ml->clj java->num
+                :clj->xdm identity
+                :xml-name "xs:decimal"
+                :xcc-type ValueType/XS_DECIMAL}
+   :xs-double {:ml->clj java->num
+               :clj->xdm identity
+               :xml-name "xs:double"
+               :xcc-type ValueType/XS_DOUBLE}
+   :xs-float {:ml->clj java->num
+              :clj->xdm identity
+              :xml-name "xs:float"
+              :xcc-type ValueType/XS_FLOAT}
+
+   ;; Durations
+   :duration {;; XdmDuration should only ever come through as
+              ;; xs:duration; this is a purely Java construct.
+              :ml->clj #(.toString %)
+              :clj->xdm identity ;; TODO test
+              :xml-name "duration()"
+              :xcc-type nil}
+   :xs-duration {:ml->clj str
+                 :clj->xdm identity
+                 :xml-name "xs:duration"
+                 :xcc-type ValueType/XS_DURATION}
+   :xs-day-time-duration {:ml->clj str
+                          :clj->xdm identity ;; TODO
+                          :xml-name "xs:dayTimeDuration"
+                          ;; UML diagram says "XDT_DAY_TIME_DURATION" but that doesn't resolve
+                          :xcc-type ValueType/XS_DAY_TIME_DURATION}
+   :xs-year-month-duration {:ml->clj str
+                            :clj->xdm identity ;; TODO
+                            :xml-name "xs:yearMonthDuration"
+                            ;; UML diagram says "XDT_YEAR_MONTH_DURATION" but that doesn't resolve
+                            :xcc-type ValueType/XS_YEAR_MONTH_DURATION}
+
+   ;; Gregorian dates/times
+   :xs-gday {:ml->clj str
+             :clj->xdm identity ;; TODO
+             :xml-name "xs:gDay"
+             :xcc-type ValueType/XS_GDAY}
+   :xs-gmonth {:ml->clj str
+               :clj->xdm identity ;; TODO
+               :xml-name "xs:gMonth"
+               :xcc-type ValueType/XS_GMONTH}
+   :xs-gmonth-day {:ml->clj str
+                   :clj->xdm identity ;; TODO
+                   :xml-name "xs:gMonthDay"
+                   :xcc-type ValueType/XS_GMONTH_DAY}
+   :xs-gyear {:ml->clj str
+              :clj->xdm identity ;; TODO
+              :xml-name "xs:gYear"
+              :xcc-type ValueType/XS_GYEAR}
+   :xs-gyear-month {:ml->clj str
+                    :clj->xdm identity ;; TODO
+                    :xml-name "xs:gYearMonth"
+                    :xcc-type ValueType/XS_GYEAR_MONTH}
+
+   :xs-hex-binary {:ml->clj str ;; looks OK but needs to be tested with real doc
+                   :clj->xdm identity ;; TODO
+                   :xml-name "xs:hexBinary"
+                   :xcc-type ValueType/XS_HEX_BINARY}
+   :xs-qname {:ml->clj str
+              :clj->xdm identity ;; TODO
+              :xml-name "xs:QName"
+              :xcc-type ValueType/XS_QNAME}
+   :xs-string {:ml->clj str
+               :clj->xdm str
+               :xml-name "xs:string"
+               :xcc-type ValueType/XS_STRING}
+   :xs-untyped-atomic {:ml->clj str
+                       :clj->xdm identity ;; TODO
+                       ;; NB: also referred to as "xdt:untypedAtomic" in type listing
+                       :xml-name "xs:untypedAtomic"
+                       ;; UML diagram says "XDT_UNTYPED_ATOMIC" but that doesn't resolve
+                       :xcc-type ValueType/XS_UNTYPED_ATOMIC}
+
+   ;; Default:
+   nil {:ml->clj str
+        :clj->xdm identity ;; TODO
+        :xml-name nil
+        :xcc-type ValueType/XS_STRING}})
+
+(def xml-type-str->conv-fn
+  "Default mapping from XML Schema type strings to Clojure functions
+  that will convert such a value to Clojure types.
+
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html"
+  (reduce (fn [acc [k {:keys [xml-name ml->clj]}]]
+            (assoc acc xml-name ml->clj))
+          {}
+          xcc-types))
+
+(def variable-types
+  "Mapping between Clojure keywords describing XML Schema types types
+  and the Java representations of those types.
+
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/ValueType.html"
+  (reduce (fn [acc [k {:keys [xcc-type]}]]
+            (assoc acc k xcc-type))
+          {}
+          xcc-types))
+
+(def xcc-type->xdm-conv-fn
+  "Mapping from Clojure keywords describing XCC types to functions
+  that will convert a Clojure value to an object appropriate for use
+  in a MarkLogic XdmVariable."
+  (reduce (fn [acc [k {:keys [clj->xdm]}]]
+            (assoc acc k clj->xdm))
+          {}
+          xcc-types))
+
+;;;;
 
 (defn result->type
   "Returns type string of the given query Result object. Currently
@@ -158,10 +390,10 @@
   MarkLogic query result sequence. Default type mappings can be
   overridden (in part or in whole) with the optional parameter
   `type-mapping`, which should contain a transformation function keyed
-  by an XCC type string. See `xcc-type->conv-fn` above."
+  by an XCC type string. See `xml-type-str->conv-fn` above."
   [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
-  (map (fn [item] (((merge xcc-type->conv-fn
+  (map (fn [item] (((merge xml-type-str->conv-fn
                           (when (map? type-mapping)
                             type-mapping))
                    (.toString (.getValueType item))) item))
@@ -490,138 +722,6 @@
                  server-response))
     server-response))
 
-(def variable-types
-  "Mapping between Clojure keywords describing XDM Variable types and
-  the Java representations of those types."
-  {:array-node ValueType/ARRAY_NODE
-   :attribute ValueType/ATTRIBUTE ;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type
-   :binary ValueType/BINARY
-   :boolean-node ValueType/BOOLEAN_NODE
-   :comment ValueType/COMMENT ;; FIXME if passed as variable :type, causes: com.marklogic.xcc.exceptions.XQueryException: XDMP-LEXVAL: xs:QName("comment()") -- Invalid lexical value "comment()" 
-   :cts-box ValueType/CTS_BOX
-   :cts-circle ValueType/CTS_CIRCLE
-   :cts-point ValueType/CTS_POINT
-   :cts-polygon ValueType/CTS_POLYGON
-
-   :document ValueType/DOCUMENT ;; XXX document-node, really
-   :element ValueType/ELEMENT
-   :js-array ValueType/JS_ARRAY
-   :js-object ValueType/JS_OBJECT
-   :node ValueType/NODE
-   :null-node ValueType/NULL_NODE
-   :number-node ValueType/NUMBER_NODE
-   :object-node ValueType/OBJECT_NODE
-   :processing-instruction ValueType/PROCESSING_INSTRUCTION
-   :sequence ValueType/SEQUENCE
-   :text ValueType/TEXT ;; FIXME causes XDMP-LEXVAL
-
-   :xs-any-uri ValueType/XS_ANY_URI
-   :xs-base64-binary ValueType/XS_BASE64_BINARY
-   :xs-boolean ValueType/XS_BOOLEAN
-   :xs-date ValueType/XS_DATE
-   :xs-date-time ValueType/XS_DATE_TIME
-   :xs-day-time-duration ValueType/XS_DAY_TIME_DURATION
-   :xs-decimal ValueType/XS_DECIMAL
-   :xs-double ValueType/XS_DOUBLE
-   :xs-duration ValueType/XS_DURATION
-   :xs-float ValueType/XS_FLOAT
-
-   :xs-gday ValueType/XS_GDAY
-   :xs-gmonth ValueType/XS_GMONTH
-   :xs-gmonth-day ValueType/XS_GMONTH_DAY
-   :xs-gyear ValueType/XS_GYEAR
-   :xs-gyear-month ValueType/XS_GYEAR_MONTH
-
-   :xs-hex-binary ValueType/XS_HEX_BINARY
-   :xs-integer ValueType/XS_INTEGER
-   :xs-qname ValueType/XS_QNAME
-   :xs-string ValueType/XS_STRING
-   :xs-time ValueType/XS_TIME
-   :xs-untyped-atomic ValueType/XS_UNTYPED_ATOMIC
-   :xs-year-month-duration ValueType/XS_YEAR_MONTH_DURATION
-
-   ;; default:
-   nil ValueType/XS_STRING})
-
-(defn ->xml-str
-  "Assumes that its input is valid XML in some format, returning that
-  XML in its String representation. Accepts String, hiccup-style
-  vectors, and clojure.data.xml.Element."
-  [xml]
-  (cond
-    (string? xml) xml
-    (vector? xml) (xml/emit-str (xml/sexp-as-element xml))
-    (instance? clojure.data.xml.Element xml) (xml/emit-str xml)))
-
-(defn wrap-val
-  "Given a Clojure value, returns a value in a type appropriate for a
-  MarkLogic XdmVariable."
-  [clj-val type]
-  (case type
-    :array-node (ValueFactory/newArrayNode (json/write-str clj-val))
-    :boolean-node (-> (com.fasterxml.jackson.databind.node.JsonNodeFactory/instance)
-                      (.booleanNode clj-val)
-                      ValueFactory/newBooleanNode)
-    :attribute clj-val ;; doesn't seem to be implemented by ValueFactory: "java.lang.InternalError Unrecognized valueType: attribute()"
-    :binary clj-val ;; TODO
-    :comment clj-val ;; TODO, also really :comment-node
-
-    :cts-box (str clj-val) ;; 4-element sequence or String
-    :cts-circle (let [[radius [latitude longitude]] clj-val]
-                  (.asString (ValueFactory/newCtsCircle (str radius)
-                                                        (ValueFactory/newCtsPoint (str latitude)
-                                                                                  (str longitude)))))
-    :cts-point (str (first clj-val) ","
-                    (second clj-val)) ;; Expects a 2-number sequence
-    :cts-polygon (let [vertices clj-val]
-                   ;; Expects a sequence of 2-element sequences, each
-                   ;; describing successive vertices (points) of the
-                   ;; polygon
-                   (.asString (ValueFactory/newCtsPolygon
-                               (mapv (fn [latitude longitude]
-                                       (ValueFactory/newCtsPoint (str latitude)
-                                                                 (str longitude)))
-                                     vertices))))
-
-    :document (->xml-str clj-val) ;; :document-node, really, but we're following ValueType
-    :element (->xml-str clj-val)
-    :js-array (ValueFactory/newJSArray (json/write-str clj-val))
-    :js-object (ValueFactory/newJSObject (json/write-str clj-val))
-    :node clj-val
-    :null-node nil
-    :number-node (str clj-val)
-    :object-node (ValueFactory/newObjectNode (json/write-str clj-val))
-    :processing-instruction clj-val ;; TODO
-    :sequence clj-val ;; XXX WONTFIX -- see GitHub issue #8: "com.marklogic.xcc.exceptions.UnimplementedFeatureException - Setting variables that are sequences is not supported"
-    :text clj-val ;; TODO, also really :text-node
-
-    :xs-any-uri clj-val ;; TODO
-    :xs-base64-binary clj-val ;; TODO
-    :xs-boolean clj-val
-    :xs-date clj-val ;; TODO
-    :xs-date-time clj-val ;; TODO
-    :xs-day-time-duration clj-val ;; TODO
-    :xs-decimal clj-val
-    :xs-double clj-val
-    :xs-duration clj-val
-    :xs-float clj-val
-
-    :xs-gday clj-val ;; TODO
-    :xs-gmonth clj-val ;; TODO
-    :xs-gmonth-day clj-val ;; TODO
-    :xs-gyear clj-val ;; TODO
-    :xs-gyear-month clj-val ;; TODO
-
-    :xs-hex-binary clj-val ;; TODO
-    :xs-integer clj-val
-    :xs-qname clj-val ;; TODO
-    :xs-string (str clj-val)
-    :xs-time clj-val ;; TODO
-    :xs-untyped-atomic clj-val ;; TODO
-    :xs-year-month-duration clj-val ;; TODO
-
-    clj-val))
-
 (defn- make-request-obj
   "Build a Request object using the given `request-factory` builder,
   request `options`, and bindings for XQuery external `variables`."
@@ -636,12 +736,12 @@
                                       (variable-types type)
                                       (if as-is?
                                         value
-                                        (wrap-val value type)))
+                                        ((xcc-type->xdm-conv-fn type) value)))
                      (.setNewVariable acc (name vname)
                                       (variable-types type)
                                       (if as-is?
                                         value
-                                        (wrap-val value type))))))
+                                        ((xcc-type->xdm-conv-fn type) value))))))
                acc)
              (doto request-factory (.setOptions (make-request-options options)))
              variables))
@@ -651,8 +751,8 @@
   `session` using `request-factory` and `query`. Modify it
   with (possibly empty) `options` and `variables` maps. Applies type
   conversion to response according to defaults and
-  `xcc-type->conv-fn`. Variables may be passed as a map of Strings or
-  with String names corresponding to maps describing the variable
+  `xml-type-str->conv-fn`. Variables may be passed as a map of Strings
+  or with String names corresponding to maps describing the variable
   using mandatory key `:value` and optional keys `:namespace` and
   `:type`.`"
   [request-factory session query options variables types shape]
@@ -694,7 +794,7 @@
   connection defined by the given session. Takes an optional
   configuration map describing request `options` and `variables`,
   desired `shape` of the result, and overrides of default type
-  conversion in `xcc-type->conv-fn`.
+  conversion in `xml-type-str->conv-fn`.
 
   Options passed must be in `valid-request-options` and conform to
   `request-options`.
@@ -708,8 +808,9 @@
   return only the first value.
 
   Type conversion overrides must be a map using keys present in
-  `uruk.core/xcc-type->conv-fn` and conform to use in `convert-types`,
-  that is, including values which are a function of one variable."
+  `uruk.core/xml-type-str->conv-fn` and conform to use in
+  `convert-types`, that is, including values which are a function of
+  one variable."
   ([session query]
    (execute-xquery session query {}))
   ([session query {:keys [options variables types shape]}]
@@ -721,7 +822,7 @@
   defined by the given session. Takes an optional configuration map
   describing request `options` and `variables`, desired `shape` of the
   result, and overrides of default type conversion in
-  `xcc-type->conv-fn`.
+  `xml-type-str->conv-fn`.
 
   Options passed must be in `valid-request-options` and conform to
   `request-options`.
@@ -735,8 +836,9 @@
   return only the first value.
 
   Type conversion overrides must be a map using keys present in
-  `uruk.core/xcc-type->conv-fn` and conform to use in `convert-types`,
-  that is, including values which are a function of one variable."
+  `uruk.core/xml-type-str->conv-fn` and conform to use in
+  `convert-types`, that is, including values which are a function of
+  one variable."
   ([session module]
    (execute-module session module {}))
   ([session module {:keys [options variables types shape]}]
