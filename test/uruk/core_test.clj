@@ -396,6 +396,7 @@
                        xdmp:document-delete('/content-factory/new-doc');"
                       {:shape :single}))))
 
+;; TODO insert as-is strings
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; TODO security options
@@ -485,3 +486,379 @@
     ;; TODO with make-cp-content-source, once we want to delve into
     ;; the extreme complexity of ConnectionProvider
     ))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Type tests
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (def session
+;;   (create-session {:uri "xdbc://localhost:8383/"
+;;                    :user "rest-admin" :password "x"
+;;                    :content-base "TutorialDB"}))
+
+(deftest types
+  (with-open [session (create-session {:uri "xdbc://localhost:8383/"
+                                       :user "rest-admin" :password "x"
+                                       :content-base "TutorialDB"})]
+    (testing "Types roundtrip through XQuery with expected conversions"
+      (testing "...JSON interface types"
+        (testing "......array-node type"
+          (is (= "array-node()"
+                 (result->type (execute-xquery session "array-node {1,2,3}"
+                                               {:types :raw}))))
+          (is (= [1 2 3]
+                 (execute-xquery session "array-node {1,2,3}"
+                                 {:shape :single!}))))
+
+        (testing "......boolean-node type"
+          (is (= "boolean-node()"
+                 (result->type (execute-xquery session "boolean-node{false()}"
+                                               {:types :raw}))))
+          (is (false? (execute-xquery session "boolean-node{false()}"
+                                      {:shape :single!}))))
+
+        ;; TODO produce and test JsonItem
+
+        (testing "......null-node type"
+          (is (= "null-node()"
+                 (result->type (execute-xquery session "null-node {}"
+                                               {:types :raw}))))
+          (is (nil? (execute-xquery session "null-node {}"
+                                    {:shape :single!}))))
+
+        (testing "......number-node type"
+          (is (= "number-node()"
+                 (result->type (execute-xquery session "number-node {1}"
+                                               {:types :raw}))))
+          (is (= 1 (execute-xquery session "number-node {1}"
+                                   {:shape :single!}))))
+
+        (testing "......object-node type"
+          (is (= "object-node()"
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                      let $object := json:object()
+                                      let $_ := map:put($object,\"a\",111)
+                                      return xdmp:to-json($object)" {:types :raw}))))
+          (is (= {"a" 111}
+                 (execute-xquery session "xquery version \"1.0-ml\";
+                                      let $object := json:object()
+                                      let $_ := map:put($object,\"a\",111)
+                                      return xdmp:to-json($object)"
+                                 {:shape :single!})))))
+
+      
+      (testing "...JSON types"
+        (testing "......JSON array type"
+          (is (= "json:array"
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                            json:array(
+                             <json:array xmlns:json=\"http://marklogic.com/xdmp/json\"
+                             xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"
+                             xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">
+                             <json:value xsi:type=\"xs:string\">hello</json:value>
+                             <json:value xsi:type=\"xs:string\">world</json:value>
+                             <json:array>
+                             <json:value xsi:type=\"xs:string\">one</json:value>
+                             <json:value xsi:type=\"xs:string\">two</json:value>
+                             </json:array>
+                             </json:array>
+                            )" {:types :raw}))))
+          (is (= ["hello" "world" ["one" "two"]]
+                 (execute-xquery session
+                                 "xquery version \"1.0-ml\";
+                            json:array(
+                             <json:array xmlns:json=\"http://marklogic.com/xdmp/json\"
+                             xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"
+                             xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">
+                             <json:value xsi:type=\"xs:string\">hello</json:value>
+                             <json:value xsi:type=\"xs:string\">world</json:value>
+                             <json:array>
+                             <json:value xsi:type=\"xs:string\">one</json:value>
+                             <json:value xsi:type=\"xs:string\">two</json:value>
+                             </json:array>
+                             </json:array>
+                            )" {:shape :single!}))))
+        
+        (testing "......JSON object type"
+          (is (= "json:object"
+                 (result->type (execute-xquery session "json:object()"
+                                               {:types :raw}))))
+          (is (= {}
+                 (execute-xquery session "json:object()"
+                                 {:shape :single!})))))) 
+
+    (testing "...CTS types"
+      (testing "......CTS box type"
+        (is (= "cts:box"
+               (result->type (execute-xquery session "cts:box(45, -122, 78, 30)"
+                                             {:types :raw}))))
+        (is (= "[45, -122, 78, 30]"
+               (execute-xquery session "cts:box(45, -122, 78, 30)"
+                               {:shape :single!}))))
+
+      (testing "......CTS circle type"
+        (is (= "cts:circle"
+               (result->type (execute-xquery session "cts:circle(20, cts:point(37.655983, -122.425525))"
+                                             {:types :raw}))))
+        (is (= "@20 37.655983,-122.42552"
+               (execute-xquery session "cts:circle(20, cts:point(37.655983, -122.425525))"
+                               {:shape :single!}))))
+
+      (testing "......CTS point type"
+        (is (= "cts:point"
+               (result->type (execute-xquery session "cts:point(37.655983, -122.425525)"
+                                             {:types :raw}))))
+        (is (= "37.655983,-122.42552"
+               (execute-xquery session "cts:point(37.655983, -122.425525)"
+                               {:shape :single!}))))
+
+      (testing "......CTS polygon type"
+        (is (= "cts:polygon"
+               (result->type (execute-xquery session "(: this polygon approximates the 94041 zip code :)
+                                                    let $points := (cts:point(0.373899653086420E+02, -0.122078578406509E+03),
+                                                      cts:point(0.373765400000000E+02, -0.122063772000000E+03),
+                                                      cts:point(0.373781400000000E+02, -0.122067972000000E+03),
+                                                      cts:point(0.373825650000000E+02, -0.122068365000000E+03),
+                                                      cts:point(0.373797400000000E+02, -0.122072172000000E+03),
+                                                      cts:point(0.373899400000000E+02, -0.122092573000000E+03),
+                                                      cts:point(0.373941400000000E+02, -0.122095573000000E+03),
+                                                      cts:point(0.373966400000000E+02, -0.122094173000000E+03),
+                                                      cts:point(0.373958400000000E+02, -0.122092373000000E+03),
+                                                      cts:point(0.374004400000000E+02, -0.122091273000000E+03),
+                                                      cts:point(0.374004400000000E+02, -0.122091273000000E+03),
+                                                      cts:point(0.373873400000000E+02, -0.122057872000000E+03),
+                                                      cts:point(0.373873400000000E+02, -0.122057872000000E+03),
+                                                      cts:point(0.373854400000000E+02, -0.122052672000000E+03),
+                                                      cts:point(0.373833400000000E+02, -0.122053372000000E+03),
+                                                      cts:point(0.373819400000000E+02, -0.122057572000000E+03),
+                                                      cts:point(0.373775400000000E+02, -0.122060872000000E+03),
+                                                      cts:point(0.373765400000000E+02, -0.122063772000000E+03) )
+                                                    return
+                                                    cts:polygon($points)"
+                                             {:types :raw}))))
+        (is (= "37.389965,-122.07858 37.37654,-122.06377 37.37814,-122.06797 37.382565,-122.06837 37.37974,-122.07217 37.38994,-122.09257 37.39414,-122.09557 37.39664,-122.09417 37.39584,-122.09237 37.40044,-122.09127 37.40044,-122.09127 37.38734,-122.05787 37.38734,-122.05787 37.38544,-122.05267 37.38334,-122.05337 37.38194,-122.05757 37.37754,-122.06087 37.37654,-122.06377 37.389965,-122.07858"
+               (execute-xquery session "(: this polygon approximates the 94041 zip code :)
+                                      let $points := (cts:point(0.373899653086420E+02, -0.122078578406509E+03),
+                                        cts:point(0.373765400000000E+02, -0.122063772000000E+03),
+                                        cts:point(0.373781400000000E+02, -0.122067972000000E+03),
+                                        cts:point(0.373825650000000E+02, -0.122068365000000E+03),
+                                        cts:point(0.373797400000000E+02, -0.122072172000000E+03),
+                                        cts:point(0.373899400000000E+02, -0.122092573000000E+03),
+                                        cts:point(0.373941400000000E+02, -0.122095573000000E+03),
+                                        cts:point(0.373966400000000E+02, -0.122094173000000E+03),
+                                        cts:point(0.373958400000000E+02, -0.122092373000000E+03),
+                                        cts:point(0.374004400000000E+02, -0.122091273000000E+03),
+                                        cts:point(0.374004400000000E+02, -0.122091273000000E+03),
+                                        cts:point(0.373873400000000E+02, -0.122057872000000E+03),
+                                        cts:point(0.373873400000000E+02, -0.122057872000000E+03),
+                                        cts:point(0.373854400000000E+02, -0.122052672000000E+03),
+                                        cts:point(0.373833400000000E+02, -0.122053372000000E+03),
+                                        cts:point(0.373819400000000E+02, -0.122057572000000E+03),
+                                        cts:point(0.373775400000000E+02, -0.122060872000000E+03),
+                                        cts:point(0.373765400000000E+02, -0.122063772000000E+03) )
+                                      return
+                                      cts:polygon($points)"
+                               {:shape :single!})))))
+    
+    (testing "...XDM types"    ;; TODO
+      ;; FIXME
+
+      ;; XDMBinary
+      (comment (execute-xquery session "xquery version \"1.0-ml\"; xdmp:document-load(\"/path/to/mlfavicon.png\");")
+               (execute-xquery session "xquery version \"1.0-ml\"; doc(\"/path/to/mlfavicon.png\");")))
+
+    (testing "...XS types"
+      (testing "......XSAnyURI"
+        (is (= "xs:anyURI"
+               (result->type (execute-xquery session "fn:resolve-uri(\"hello/goodbye.xml\", \"http://mycompany/default.xqy\")"
+                                             {:types :raw}))))
+        (is (= "http://mycompany/hello/goodbye.xml"
+               (execute-xquery session "fn:resolve-uri(\"hello/goodbye.xml\",
+                                                 \"http://mycompany/default.xqy\")"
+                               {:shape :single!}))))
+
+      ;; TODO relevant?
+      ;; from https://docs.marklogic.com/xdmp:base64-encode
+      ;; xdmp:base64-encode("slings and arrows of outrageous fortune")
+      ;;     => c2xpbmdzIGFuZCBhcnJvd3Mgb2Ygb3V0cmFnZW91cyBmb3J0dW5l
+      (comment (testing "......XSBase64Binary" ;; FIXME
+                 (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")" {:shape :single!})))
+
+      (testing "......XSBoolean"
+        (is (= "xs:boolean"
+               (result->type (execute-xquery session "fn:doc-available(\"derp\")"
+                                             {:types :raw}))))
+        (is (false? (execute-xquery session "fn:doc-available(\"derp\")" {:shape :single!}))) 
+        (is (= "xs:boolean"
+               (result->type (execute-xquery session "xdmp:exists(collection())"
+                                             {:types :raw}))))
+        (is (true? (execute-xquery session "xdmp:exists(collection())" {:shape :single!}))))
+
+      (testing "......XSDate"
+        (is (= "xs:date"
+               (result->type (execute-xquery session "fn:adjust-date-to-timezone(xs:date(\"2002-03-07-07:00\"),())"
+                                             {:types :raw}))))
+        (is (= "2002-03-07"
+               (execute-xquery session "fn:adjust-date-to-timezone(xs:date(\"2002-03-07-07:00\"),
+                                                             ())"
+                               {:shape :single!}))))
+
+      (testing "......XSDateTime"
+        (is (= "xs:dateTime"
+               (result->type (execute-xquery session "fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"), ())"
+                                             {:types :raw}))))
+        (is (= "2002-03-07T10:00:00"
+               (execute-xquery session "fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"), ())"
+                               {:shape :single!}))))
+
+      (testing "......XSDayTimeDuration"
+        (is (= "xs:dayTimeDuration"
+               (result->type (execute-xquery session "xquery version \"0.9-ml\" 
+                                                    fn:subtract-dateTimes-yielding-dayTimeDuration(fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"), ()), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))" ;; this fn removed in version 1.0; only used to get correct response type
+                                             {:types :raw}))))
+        (is (= "P785DT20H59M"
+               (execute-xquery session "xquery version \"0.9-ml\"
+                                      fn:subtract-dateTimes-yielding-dayTimeDuration(fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"),
+                                                                                                                    ()),
+                                                                                     xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
+                               {:shape :single!}))))
+      
+      (testing "......XSDecimal"
+        (is (= "xs:decimal" (result->type (execute-xquery session "fn:abs(-1.2)"
+                                                          {:types :raw}))))
+        (is (= 1.2 (execute-xquery session "fn:abs(-1.2)" {:shape :single!}))))
+
+      (testing "......XSDouble"
+        (is (= "xs:double" (result->type (execute-xquery session "fn:number(-1.2)"
+                                                         {:types :raw}))))
+        (is (= -1.2 (execute-xquery session "fn:number(-1.2)" {:shape :single!})))
+        (is (= "xs:double" (result->type (execute-xquery session "xs:double(-1.2)"
+                                                         {:types :raw}))))
+        (is (= -1.2 (execute-xquery session "xs:double(-1.2)" {:shape :single!}))))
+
+      (testing "......XSDuration"
+        (is (= "xs:duration"
+               (result->type (execute-xquery session "xs:duration(\"P3DT10H\")"
+                                             {:types :raw}))))
+        (is (= "P3DT10H"
+               (execute-xquery session "xs:duration(\"P3DT10H\")" {:shape :single!}))))
+
+      (testing "......XSFloat"
+        (is (= "xs:float" (result->type (execute-xquery session "xs:float(\"1\")"
+                                                        {:types :raw}))))
+        (is (= 1 (execute-xquery session "xs:float(\"1\")" {:shape :single!}))))
+
+      (testing "......Gregorians!"
+        (testing ".........XSGDay"
+          (is (= "xs:gDay" (result->type (execute-xquery session "xs:gDay('---08')"
+                                                         {:types :raw}))))
+          (is (= "---08" (execute-xquery session "xs:gDay('---08')" {:shape :single!}))))
+
+        (testing ".........XSGMonth"
+          (is (= "xs:gMonth"
+                 (result->type (execute-xquery session "xs:gMonth('--08')" {:types :raw}))))
+          (is (= "--08" (execute-xquery session "xs:gMonth('--08')" {:shape :single!}))))
+
+        (testing ".........XSGMonthDay"
+          (is (= "xs:gMonthDay"
+                 (result->type (execute-xquery session "xs:gMonthDay('--08-20')"
+                                               {:types :raw}))))
+          (is (= "--08-20"
+                 (execute-xquery session "xs:gMonthDay('--08-20')" {:shape :single!}))))
+
+        (testing ".........XSGYear"
+          (is (= "xs:gYear"
+                 (result->type (execute-xquery session "xs:gYear('2016')"
+                                               {:types :raw}))))
+          (is (= "2016" (execute-xquery session "xs:gYear('2016')" {:shape :single!}))))
+
+        (testing ".........XSGYearMonth"
+          (is (= "xs:gYearMonth"
+                 (result->type (execute-xquery session "xs:gYearMonth('2016-02')"
+                                               {:types :raw}))))
+          (is (= "2016-02" (execute-xquery session "xs:gYearMonth('2016-02')"
+                                           {:shape :single!})))))
+      ;; end Gregorians
+
+      (testing ".........XSHexBinary"
+        (is (= "xs:hexBinary"
+               (result->type (execute-xquery session "xs:hexBinary(\"74657374\")"
+                                             {:types :raw}))))
+        (is (= "74657374"
+               (execute-xquery session "xs:hexBinary(\"74657374\")" {:shape :single!})))
+
+        ;; TODO FIXME
+        ;; (is (= "xs:hexBinary"
+        ;;        (result->type (execute-xquery session "xdmp:integer-to-hex(string-to-codepoints(
+        ;;                                                     \"Testing binary Constructor\"))"
+        ;;                                      {:types :raw}))))
+        ;; TODO FIXME
+        ;; (is (= '("54" "65" "73" "74" "69" "6e" "67" "20" "62" "69" "6e" "61" "72"
+        ;;          "79" "20" "43" "6f" "6e" "73" "74" "72" "75" "63" "74" "6f" "72")
+        ;;        (execute-xquery session "xdmp:integer-to-hex(string-to-codepoints(
+        ;;                                                     \"Testing binary Constructor\"))")))
+        ;; TODO FIXME
+        
+        (is (= "xs:hexBinary"
+               (result->type (execute-xquery session "data(xdmp:subbinary(binary { xs:hexBinary(\"DEADBEEF\") }, 3, 2))"
+                                             {:types :raw}))))
+        (is  (= "BEEF"
+                (execute-xquery session "data(xdmp:subbinary(binary { xs:hexBinary(\"DEADBEEF\") }, 3, 2))"
+                                {:shape :single!}))))
+
+      (testing ".........XSInteger"
+        (is (= "xs:integer" (result->type (execute-xquery session "xdmp:databases()"
+                                                          {:types :raw}))))
+        (is (every? integer? (execute-xquery session "xdmp:databases()"))))
+
+      (testing ".........XSQName"
+        (is (= "xs:QName" 
+               (result->type (execute-xquery session "fn:QName(\"http://www.example.com/example\", \"person\")"
+                                             {:types :raw}))))
+        (is (= "person"
+               (execute-xquery session "fn:QName(\"http://www.example.com/example\", \"person\")"
+                               {:shape :single!}))))
+
+      (testing ".........XSString"
+        (is (= "xs:string"
+               (result->type (execute-xquery session "\"hello world\""
+                                             {:types :raw}))))
+        (is (= "hello world"
+               (execute-xquery session "\"hello world\"" {:shape :single!}))))
+
+      (testing ".........XSTime"
+        (is (= "xs:time"
+               (result->type (execute-xquery session "fn:adjust-time-to-timezone(xs:time(\"10:00:00\"))"
+                                             {:types :raw}))))
+        (is (= "10:00:00+02:00"
+               (execute-xquery session "fn:adjust-time-to-timezone(xs:time(\"10:00:00\"))"
+                               {:shape :single!}))))
+
+      (testing ".........XSUntypedAtomic"
+        (is (= "xs:untypedAtomic"
+               (result->type
+                (execute-xquery session "let $x as xs:untypedAtomic*
+                           := (xs:untypedAtomic(\"cherry\"),
+                               xs:untypedAtomic(\"1\"),
+                               xs:untypedAtomic(\"1\"))
+                         return fn:distinct-values ($x)"
+                                {:types :raw}))))
+        (is (= '("cherry" "1")
+               (execute-xquery session "let $x as xs:untypedAtomic*
+                           := (xs:untypedAtomic(\"cherry\"),
+                               xs:untypedAtomic(\"1\"),
+                               xs:untypedAtomic(\"1\"))
+                         return fn:distinct-values ($x)"))))
+
+      (testing ".........XSYearMonthDuration"
+        (is (= "xs:yearMonthDuration"
+               (result->type (execute-xquery session "xquery version \"0.9-ml\"
+                         fn:subtract-dateTimes-yielding-yearMonthDuration(fn:current-dateTime(), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
+                                             {:types :raw}))))
+        (is (= "P16Y6M"
+               (execute-xquery session "xquery version \"0.9-ml\"
+                         fn:subtract-dateTimes-yielding-yearMonthDuration(fn:current-dateTime(), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
+                               {:shape :single!})))))))
