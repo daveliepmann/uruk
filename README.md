@@ -59,10 +59,10 @@ Basic type conversion is performed automatically for most [XCC types](https://do
 => #object[com.marklogic.xcc.impl.CachedResultSequence 0x2c034c22 "CachedResultSequence: size=1, closed=false, cursor=-1"]
 ```
 
-This lets you inspect result types with `result-type`:
+This lets you inspect result types with `result->type`:
 ``` clojure
 (with-open [session (uruk/create-session db)]
-  (uruk/result-type (uruk/execute-xquery session "\"hello world\"" {:types :raw})))
+  (uruk/result->type (uruk/execute-xquery session "\"hello world\"" {:types :raw})))
 
 => "xs:string"
 ```

@@ -37,9 +37,9 @@
   (uruk/execute-xquery session "\"hello world\"" {:types :raw}))
 ;; => #object[com.marklogic.xcc.impl.CachedResultSequence 0x2c034c22 "CachedResultSequence: size=1, closed=false, cursor=-1"]
 
-;; Inspecting result types with `result-type`
+;; Inspecting result types with `result->type`
 (with-open [session (uruk/create-session db)]
-  (uruk/result-type (uruk/execute-xquery session "\"hello world\"" {:types :raw})))
+  (uruk/result->type (uruk/execute-xquery session "\"hello world\"" {:types :raw})))
 ;; => "xs:string"
 
 ;; Replacing the default type-conversion functions
