@@ -111,7 +111,8 @@
   [session]
   (and (is (instance? RequestOptions (:default-request-options session)))
        (is (instance? RequestOptions (:effective-request-options session)))
-       (is (instance? Logger (:logger session))) ;; FIXME need better test
+       (is (and (instance? Logger (:logger session))
+                (= "com.marklogic.xcc" (.getName (:logger session)))))
        (is (nil? (:user-object session)))
        (is (= 0 (:transaction-timeout session)))
        (is (nil? (:transaction-mode session)))))
