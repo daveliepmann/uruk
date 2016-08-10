@@ -169,7 +169,9 @@
   (and (is (= (:timeout-millis (:default-request-options expected-config))
               (.getTimeoutMillis (:default-request-options session))
               (.getTimeoutMillis (:effective-request-options session))))
-       (is (instance? Logger (:logger session))) ;; TODO test Logger better--name?
+       (is (and (instance? Logger (:logger session))
+                (= (.getName (:logger expected-config))
+                   (.getName (:logger session)))))
        (is (empty? (:user-object session))) ;; XXX is this all we can test user-object?
        (is (= (:transaction-timeout session)
               (:transaction-timeout expected-config)))
@@ -179,6 +181,7 @@
 (deftest set-session-config
   (testing "A session with explicitly-set configuration must reflect that configuration"
     (let [opts {:default-request-options {:timeout-millis 75}
+                :logger (Logger/getLogger "test")
                 ;; TODO test default Req Opts more?
                 ;; TODO test effective Req Opts more?
                 :transaction-timeout 56
