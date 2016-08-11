@@ -292,31 +292,71 @@
 ;;;; Variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(deftest non-string-variables
-  (testing "Non-string variables passed to request object are not converted to strings"
-    (is (instance? com.marklogic.xcc.types.impl.DocumentImpl
-                   (-> (with-open [session (create-session db)]
-                         (.getVariables (#'uruk.core/make-request-obj
-                                         (.newAdhocQuery session "hello world")
-                                         nil {:derp {:value "<foo/>"
-                                                     :type :document}})))
-                       first
-                       .getValue)))))
+(deftest variables
+  (testing "Variables must be created as specified."
+    (testing "...document variables passed to request object must be documents, not strings"
+      (is (instance? com.marklogic.xcc.types.impl.DocumentImpl
+                     (-> (with-open [session (create-session db)]
+                           (#'uruk.core/make-request-obj
+                            (.newAdhocQuery session "hello world")
+                            nil {:derp {:value "<foo/>"
+                                        :type :document}}))
+                         .getVariables
+                         first
+                         .getValue))))
 
-(deftest as-is-boolean-variable
-  (testing "Clojure booleans automatically convert to correct XdmVariable type"
-    (is (false? (with-open [session (create-session db)]
-                  (execute-xquery session "xquery version \"1.0-ml\";
+    (testing "...default variables map must convert to xs:string values"
+      (is (= "xs:string" (with-open [session (create-session db)]
+                           (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                                                  declare variable $my-variable external;
+                                                                  $my-variable"
+                                                         {:variables {"my-variable" "test string"
+                                                                      :a "a"}
+                                                          :types :raw})))))
+      (is (= "a" (with-open [session (create-session db)]
+                   (execute-xquery session "xquery version \"1.0-ml\";
+                                            declare variable $my-variable external;
+                                            declare variable $a external;
+                                            $a"
+                                   {:variables {"my-variable" "test string"
+                                                :a "a"}
+                                    :shape :single!})))))
+
+    (testing "...variables passed `as-is?` must be passed untouched to MarkLogic"
+      (is (= "test string" (with-open [session (create-session db)]
+                             (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                             {:variables {"my-variable" "test string"}
+                                              :shape :single!
+                                              :as-is? :true})))))
+
+    (testing "...Clojure booleans must automatically convert to XdmVariable boolean"
+      (is (= "boolean-node()" (result->type
+                               (with-open [session (create-session db)]
+                                 (execute-xquery session "xquery version \"1.0-ml\";
+                                                          declare variable $my-variable external;
+                                                          $my-variable"
+                                                 {:variables {"my-variable" {:value false
+                                                                             :type :boolean-node}}
+                                                  :types :raw})))))
+      (is (false? (with-open [session (create-session db)]
+                    (execute-xquery session "xquery version \"1.0-ml\";
+                                             declare variable $my-variable as boolean-node() external;
+                                             $my-variable"
+                                    {:variables {"my-variable" {:value false
+                                                                :type :boolean-node}}
+                                     :shape :single!}))))
+      (is (true? (with-open [session (create-session db)]
+                   (execute-xquery session "xquery version \"1.0-ml\";
                                 declare variable $my-variable as boolean-node() external;
                                 $my-variable"
-                                  {:variables {"my-variable" {:value false
-                                                              :type :boolean-node}}
-                                   :shape :single!}))))))
+                                   {:variables {"my-variable" {:value true
+                                                               :type :boolean-node}}
+                                    :shape :single!})))))))
 
 ;; TODO more variable testing
-;; TODO test `as-is?`
 ;; TODO test (all?) variable types
-;; TODO test default xs_string map structure
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -513,16 +553,16 @@
                                                {:types :raw})))))
         (with-open [session (create-session db)]
           (is (nil? (execute-xquery session "null-node {}"
-                                     {:shape :single!})))))
+                                    {:shape :single!})))))
 
       (testing "......number-node type"
         (with-open [session (create-session db)]
           (is (= "number-node()"
                  (result->type (execute-xquery session "number-node {1}"
                                                {:types :raw})))))
-          (with-open [session (create-session db)]
-            (is (= 1 (execute-xquery session "number-node {1}"
-                                    {:shape :single!})))))
+        (with-open [session (create-session db)]
+          (is (= 1 (execute-xquery session "number-node {1}"
+                                   {:shape :single!})))))
 
       (testing "......object-node type"
         (with-open [session (create-session db)]
@@ -532,12 +572,12 @@
                                       let $_ := map:put($object,\"a\",111)
                                       return xdmp:to-json($object)" {:types :raw})))))
         (with-open [session (create-session db)]
-            (is (= {"a" 111}
-                  (execute-xquery session "xquery version \"1.0-ml\";
+          (is (= {"a" 111}
+                 (execute-xquery session "xquery version \"1.0-ml\";
                                       let $object := json:object()
                                       let $_ := map:put($object,\"a\",111)
                                       return xdmp:to-json($object)"
-                                  {:shape :single!}))))))
+                                 {:shape :single!}))))))
 
 
     (testing "...JSON types"
@@ -591,9 +631,9 @@
                (result->type (execute-xquery session "cts:box(45, -122, 78, 30)"
                                              {:types :raw})))))
       (with-open [session (create-session db)]
-          (is (= "[45, -122, 78, 30]"
-                (execute-xquery session "cts:box(45, -122, 78, 30)"
-                                {:shape :single!})))))
+        (is (= "[45, -122, 78, 30]"
+               (execute-xquery session "cts:box(45, -122, 78, 30)"
+                               {:shape :single!})))))
 
     (testing "......CTS circle type"
       (with-open [session (create-session db)]
@@ -601,10 +641,10 @@
                (result->type (execute-xquery session "cts:circle(20, cts:point(37.655983, -122.425525))"
                                              {:types :raw})))))
 
-        (with-open [session (create-session db)]
-          (is (= "@20 37.655983,-122.42552"
-                 (execute-xquery session "cts:circle(20, cts:point(37.655983, -122.425525))"
-                                 {:shape :single!})))))
+      (with-open [session (create-session db)]
+        (is (= "@20 37.655983,-122.42552"
+               (execute-xquery session "cts:circle(20, cts:point(37.655983, -122.425525))"
+                               {:shape :single!})))))
 
     (testing "......CTS point type"
       (with-open [session (create-session db)]
@@ -673,14 +713,20 @@
                                {:shape :single!}))))))
 
   (testing "...XDM types"
-    (let [path-to-img "/path/to/resources/ml-favicon.png"] ;; FIXME path on your system
+    (let [path-to-img (System/getenv "URUK_TEST_IMG_PATH")] ;; FIXME path on your system
       (testing "......XDMBinary"
-        (= (Class/forName "[B")
-           (.getClass (with-open [sess (create-session db)]
-                        (execute-xquery sess (str "xquery version \"1.0-ml\";
-                                                   xdmp:external-binary(\""
-                                                  path-to-img "\");")
-                                        {:shape :single!})))))))
+        (is (= "binary()"
+               (result->type (with-open [session (create-session db)]
+                               (execute-xquery session (str "xquery version \"1.0-ml\";
+                                                       xdmp:external-binary(\""
+                                                            path-to-img "\");")
+                                               {:types :raw})))))
+        (is (= (Class/forName "[B")
+               (.getClass (with-open [sess (create-session db)]
+                            (execute-xquery sess (str "xquery version \"1.0-ml\";
+                                                       xdmp:external-binary(\""
+                                                      path-to-img "\");")
+                                            {:shape :single!}))))))))
 
   (testing "...XS types"
     (testing "......XSAnyURI"
@@ -695,13 +741,13 @@
                                                  \"http://mycompany/default.xqy\")"
                                {:shape :single!})))))
 
-    ;; TODO relevant?
-    ;; from https://docs.marklogic.com/xdmp:base64-encode
-    ;; xdmp:base64-encode("slings and arrows of outrageous fortune")
-    ;;     => c2xpbmdzIGFuZCBhcnJvd3Mgb2Ygb3V0cmFnZW91cyBmb3J0dW5l
-    (comment (testing "......XSBase64Binary" ;; FIXME
-               (with-open [session (create-session db)]
-                 (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")" {:shape :single!}))))
+    (testing "......XSBase64Binary"
+      (is (= "xs:base64Binary"
+             (result->type (with-open [session (create-session db)]
+                             (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")" {:types :raw})))))
+      (is (= (Class/forName "[B")
+             (.getClass (with-open [session (create-session db)]
+                          (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")" {:shape :single!}))))))
 
     (testing "......XSBoolean"
       (with-open [session (create-session db)]
