@@ -671,13 +671,16 @@
                                       return
                                       cts:polygon($points)"
                                {:shape :single!}))))))
-  
-  ;; (testing "...XDM types"    ;; TODO
-  ;;   ;; FIXME
 
-  ;;   ;; XDMBinary
-  ;;   (comment (execute-xquery session "xquery version \"1.0-ml\"; xdmp:document-load(\"/path/to/mlfavicon.png\");")
-  ;;            (execute-xquery session "xquery version \"1.0-ml\"; doc(\"/path/to/mlfavicon.png\");")))
+  (testing "...XDM types"
+    (let [path-to-img "/path/to/resources/ml-favicon.png"] ;; FIXME path on your system
+      (testing "......XDMBinary"
+        (= (Class/forName "[B")
+           (.getClass (with-open [sess (create-session db)]
+                        (execute-xquery sess (str "xquery version \"1.0-ml\";
+                                                   xdmp:external-binary(\""
+                                                  path-to-img "\");")
+                                        {:shape :single!})))))))
 
   (testing "...XS types"
     (testing "......XSAnyURI"
