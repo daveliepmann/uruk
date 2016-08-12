@@ -8,7 +8,7 @@
 ;; FIXME You'll have to fill in database credentials that work for
 ;; your system:
 (def db {:uri "xdbc://localhost:8383/"
-         :user "rest-admin" :password "x"
+         :user "test-admin" :password "uruktesting"
          :content-base "TutorialDB"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
