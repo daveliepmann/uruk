@@ -593,8 +593,6 @@
           (is (false? (execute-xquery session "boolean-node{false()}"
                                       {:shape :single!})))))
 
-      ;; TODO produce and test JsonItem
-
       (testing "......null-node type"
         (with-open [session (create-session db)]
           (is (= "null-node()"
@@ -913,19 +911,6 @@
                                              {:types :raw}))))
         (is (= "74657374"
                (execute-xquery session "xs:hexBinary(\"74657374\")" {:shape :single!})))
-
-        ;; TODO
-        ;; (is (= "xs:hexBinary"
-        ;;        (result->type (execute-xquery session "xdmp:integer-to-hex(string-to-codepoints(
-        ;;                                                     \"Testing binary Constructor\"))"
-        ;;                                      {:types :raw}))))
-        ;; TODO
-        ;; (is (= '("54" "65" "73" "74" "69" "6e" "67" "20" "62" "69" "6e" "61" "72"
-        ;;          "79" "20" "43" "6f" "6e" "73" "74" "72" "75" "63" "74" "6f" "72")
-        ;;        (execute-xquery session "xdmp:integer-to-hex(string-to-codepoints(
-        ;;                                                     \"Testing binary Constructor\"))")))
-        ;; TODO
-        
         (is (= "xs:hexBinary"
                (result->type (execute-xquery session "data(xdmp:subbinary(binary { xs:hexBinary(\"DEADBEEF\") }, 3, 2))"
                                              {:types :raw}))))
