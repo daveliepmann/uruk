@@ -629,7 +629,7 @@
        (.setDefaultRequestOptions session (make-request-options default-request-options)))
      (when (instance? Logger logger)
        (.setLogger session logger))
-     ;; XXX the following is not the strictest test!
+     ;; NB: the following is not the strictest test
      (when (instance? Object user-object)
        (.setUserObject session user-object))
      (when (keyword? transaction-mode)

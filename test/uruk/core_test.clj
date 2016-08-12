@@ -502,7 +502,7 @@
 ;; (deftest content-source-creation-with-uri-and-security-options
 ;;   (testing "content source creation from just a URI"
 ;;     (let [cs (uri-content-source "xdbc://localhost:8383/"
-;;                                  (make-security-options FIXME))]
+;;                                  (make-security-options ...))]
 ;;       (and (instance? ContentSource cs)
 ;;            (= 8383 (.getPort (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))
 ;;            (= "localhost" (.getHostName (.getConnectionProvider (uri-content-source "xdbc://localhost:8383/"))))))))
@@ -830,13 +830,13 @@
       (with-open [session (create-session db)]
         (is (= "xs:dayTimeDuration"
                (result->type (execute-xquery session "xquery version \"0.9-ml\" 
-                                                  fn:subtract-dateTimes-yielding-dayTimeDuration(fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"), ()), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))" ;; this fn removed in version 1.0; only used to get correct response type
+                                                      fn:subtract-dateTimes-yielding-dayTimeDuration(fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"), ()), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))" ;; this fn removed in version 1.0; only used to get correct response type
                                              {:types :raw}))))
         (is (= "P785DT20H59M"
                (execute-xquery session "xquery version \"0.9-ml\"
-                                    fn:subtract-dateTimes-yielding-dayTimeDuration(fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"),
-                                                                                                                  ()),
-                                                                                   xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
+                                        fn:subtract-dateTimes-yielding-dayTimeDuration(fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"),
+                                                                                                                      ()),
+                                                                                       xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
                                {:shape :single!})))))
     
     (testing "......XSDecimal"
@@ -912,17 +912,17 @@
         (is (= "74657374"
                (execute-xquery session "xs:hexBinary(\"74657374\")" {:shape :single!})))
 
-        ;; TODO FIXME
+        ;; TODO
         ;; (is (= "xs:hexBinary"
         ;;        (result->type (execute-xquery session "xdmp:integer-to-hex(string-to-codepoints(
         ;;                                                     \"Testing binary Constructor\"))"
         ;;                                      {:types :raw}))))
-        ;; TODO FIXME
+        ;; TODO
         ;; (is (= '("54" "65" "73" "74" "69" "6e" "67" "20" "62" "69" "6e" "61" "72"
         ;;          "79" "20" "43" "6f" "6e" "73" "74" "72" "75" "63" "74" "6f" "72")
         ;;        (execute-xquery session "xdmp:integer-to-hex(string-to-codepoints(
         ;;                                                     \"Testing binary Constructor\"))")))
-        ;; TODO FIXME
+        ;; TODO
         
         (is (= "xs:hexBinary"
                (result->type (execute-xquery session "data(xdmp:subbinary(binary { xs:hexBinary(\"DEADBEEF\") }, 3, 2))"
@@ -984,9 +984,11 @@
       (with-open [session (create-session db)]
         (is (= "xs:yearMonthDuration"
                (result->type (execute-xquery session "xquery version \"0.9-ml\"
-                       fn:subtract-dateTimes-yielding-yearMonthDuration(fn:current-dateTime(), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
+                                                      fn:subtract-dateTimes-yielding-yearMonthDuration(fn:current-dateTime(),
+                                                                                                       xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
                                              {:types :raw}))))
-        (is (= "P16Y6M"
+        (is (= "P0M"
                (execute-xquery session "xquery version \"0.9-ml\"
-                       fn:subtract-dateTimes-yielding-yearMonthDuration(fn:current-dateTime(), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
+                                        fn:subtract-dateTimes-yielding-yearMonthDuration(xs:dateTime(\"2000-01-15T12:01:00.000Z\"),
+                                                                                         xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
                                {:shape :single!})))))))

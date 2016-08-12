@@ -217,7 +217,6 @@ See `uruk.core/valid-content-creation-options`, which is a Clojurey version of t
 
 
 ## TODO
-  - move */examples/types.clj* to *core_test.clj*
   - use clojure.spec once Clojure 1.9 is stable
   - ensure insert-element robustly covers needed use cases
   - evaluate need for `with-session` macro?
