@@ -221,7 +221,9 @@
           opts {:default-request-options {:auto-retry-delay-millis 98
                                           :cache-result false
                                           :default-xquery-version "0.9-ml"
-                                          :effective-point-in-time (.getCurrentServerPointInTime dummy-session) ;; XXX requires xdmp:timestamp privilege
+                                          ;; XXX requires `xdmp:timestamp` privilege:
+                                          :effective-point-in-time (.getCurrentServerPointInTime
+                                                                    dummy-session)
                                           :locale (Locale. "ru")
                                           :max-auto-retry 17
                                           :query-language "de"
