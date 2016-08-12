@@ -173,7 +173,8 @@
        (is (and (instance? Logger (:logger session))
                 (= (.getName (:logger expected-config))
                    (.getName (:logger session)))))
-       (is (empty? (:user-object session))) ;; XXX is this all we can test user-object?
+       (is (= (:user-object expected-config)
+              (:user-object session)))
        (is (= (:transaction-timeout session)
               (:transaction-timeout expected-config)))
        (is (= (:transaction-mode session)
