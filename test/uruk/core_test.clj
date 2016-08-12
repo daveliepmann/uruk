@@ -167,27 +167,73 @@
   "True if given `session` is configured as according to
   `expected-config`; false otherwise."
   [session expected-config]
-  (and (is (= (:timeout-millis (:default-request-options expected-config))
-              (.getTimeoutMillis (:default-request-options session))
-              (.getTimeoutMillis (:effective-request-options session))))
-       (is (and (instance? Logger (:logger session))
-                (= (.getName (:logger expected-config))
-                   (.getName (:logger session)))))
-       (is (= (:user-object expected-config)
-              (:user-object session)))
-       (is (= (:transaction-timeout session)
-              (:transaction-timeout expected-config)))
-       (is (= (:transaction-mode session)
-              (:transaction-mode expected-config)))))
+  (and (and (= (:auto-retry-delay-millis (:default-request-options expected-config))
+               (.getAutoRetryDelayMillis (:default-request-options session))
+               (.getAutoRetryDelayMillis (:effective-request-options session)))
+            (= (:cache-result (:default-request-options expected-config))
+               (.getCacheResult (:default-request-options session))
+               (.getCacheResult (:effective-request-options session)))
+            (= (:default-xquery-version (:default-request-options expected-config))
+               (.getDefaultXQueryVersion (:default-request-options session))
+               (.getDefaultXQueryVersion (:effective-request-options session)))
+            (= (:effective-point-in-time (:default-request-options expected-config))
+               (.getEffectivePointInTime (:default-request-options session))
+               (.getEffectivePointInTime (:effective-request-options session)))
+            (= (:locale (:default-request-options expected-config))
+               (.getLocale (:default-request-options session))
+               (.getLocale (:effective-request-options session)))
+            (= (:max-auto-retry (:default-request-options expected-config))
+               (.getMaxAutoRetry (:default-request-options session))
+               (.getMaxAutoRetry (:effective-request-options session)))
+
+            (= (:query-language (:default-request-options expected-config))
+               (.getQueryLanguage (:default-request-options session))
+               (.getQueryLanguage (:effective-request-options session)))
+            (= (:request-name (:default-request-options expected-config))
+               (.getRequestName (:default-request-options session))
+               (.getRequestName (:effective-request-options session)))
+            (= (:request-time-limit (:default-request-options expected-config))
+               (.getRequestTimeLimit (:default-request-options session))
+               (.getRequestTimeLimit (:effective-request-options session)))
+            (= (:result-buffer-size (:default-request-options expected-config))
+               (.getResultBufferSize (:default-request-options session))
+               (.getResultBufferSize (:effective-request-options session)))
+            (= (:timeout-millis (:default-request-options expected-config))
+               (.getTimeoutMillis (:default-request-options session))
+               (.getTimeoutMillis (:effective-request-options session)))
+            (= (:timezone (:default-request-options expected-config))
+               (.getTimeZone (:default-request-options session))
+               (.getTimeZone (:effective-request-options session))))
+
+       (and (instance? Logger (:logger session))
+            (= (.getName (:logger expected-config))
+               (.getName (:logger session))))
+       (= (:user-object expected-config)
+          (:user-object session))
+       (= (:transaction-timeout session)
+          (:transaction-timeout expected-config))
+       (= (:transaction-mode session)
+          (:transaction-mode expected-config))))
 
 (deftest set-session-config
   (testing "A session with explicitly-set configuration must reflect that configuration"
-    (let [opts {:default-request-options {:timeout-millis 75}
+    (let [dummy-session (create-session db)
+          opts {:default-request-options {:auto-retry-delay-millis 98
+                                          :cache-result false
+                                          :default-xquery-version "0.9-ml"
+                                          :effective-point-in-time (.getCurrentServerPointInTime dummy-session) ;; XXX requires xdmp:timestamp privilege
+                                          :locale (Locale. "ru")
+                                          :max-auto-retry 17
+                                          :query-language "de"
+                                          :request-name "Phil"
+                                          :request-time-limit 8781
+                                          :result-buffer-size 3945
+                                          :timeout-millis 75
+                                          :timezone (TimeZone/getTimeZone "Pacific/Chuuk")}
                 :logger (Logger/getLogger "test")
-                ;; TODO test default Req Opts more?
-                ;; TODO test effective Req Opts more?
                 :transaction-timeout 56
                 :transaction-mode :query}]
+
       (testing "with standard database map"
         (with-open [sess (create-session db opts)]
           (as-expected-session-config? (session->map sess) opts)))
