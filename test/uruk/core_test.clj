@@ -423,6 +423,34 @@
 ;;;; TODO Shape
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(deftest shapes
+  (testing "Shape parameter must force result values to conform"
+    (testing "...:single shape must return one result"
+      (is (< 1 (count (with-open [sess (create-session db)]
+                       (execute-xquery sess "array-node {1,2,3}"
+                                       {:shape :single}))))))
+
+    (testing "...:single! shape must return one result"
+      (is (< 1 (count (with-open [sess (create-session db)]
+                     (execute-xquery sess "array-node {1,2,3}"
+                                     {:shape :single!}))))))
+
+    (testing "...query used for other shape tests must return list of one element"
+      (is (= 1 (count (with-open [sess (create-session db)]
+                     (execute-xquery sess "array-node {1,2,3}"))))))
+
+    (testing "...:single! must throw an exception if multiple results are returned"
+      (is (thrown? clojure.lang.ExceptionInfo
+                     (with-open [sess (create-session db)]
+                       (execute-xquery sess "xdmp:get-current-roles()"
+                                       {:shape :single!})))))
+
+    (testing "...:none shaped result must be nil"
+      (is (nil?
+           (with-open [sess (create-session db)]
+             (execute-xquery sess "xdmp:get-current-roles()"
+                             {:shape :none})))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; TODO Transactions
