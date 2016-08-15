@@ -130,8 +130,7 @@
       (with-open [sess (create-session
                         db (make-uri-content-source
                             "xdbc://localhost:8383/"
-                            {:preemptive-auth false
-                             :default-logger (Logger/getLogger "foobar")}))]
+                            {:preemptive-auth false}) {})]
         (is-default-session-config? (session->map sess))))
     (testing "session creation with hosted content source"
       (with-open [sess (create-session
@@ -285,7 +284,16 @@
       ;;                               opts)
       )))
 
-;; TODO accept-only-valid-session-config
+(deftest accept-only-valid-session-config
+  (testing "Session creation should throw an error if passed an invalid/unrecognized configuration option"
+    (is (thrown? IllegalArgumentException
+                 (create-session db {:derp "invalid!"})))
+    (is (thrown? IllegalArgumentException
+                 (create-session db {:transaction-timeout 234 :derp "invalid!"})))
+    (is (thrown? IllegalArgumentException
+                 (create-session db
+                                 (make-uri-content-source "xdbc://localhost:8383/")
+                                 {:transaction-timeout 234 :derp "invalid!"})))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -461,7 +469,7 @@
 ;;;; Element insertion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(deftest can-insert-doc
+(deftest element-insertion
   (testing "Clojure XML Elements must be insertable as documents"
     ;; Insert a document
     (with-open [session (create-session db)]
@@ -478,9 +486,8 @@
     (with-open [session (create-session db)]
       (execute-xquery session
                       "xquery version \"1.0-ml\"; xdmp:document-delete('/content-factory/new-doc');"
-                      {:shape :single}))))
+                      {:shape :single})))
 
-(deftest can-insert-doc-with-options
   (testing "Insert-element must accept content creation options"
     ;; Insert a document with various options
     (with-open [session (create-session db)]

@@ -592,6 +592,19 @@
            (seq password)
            (seq content-base)) (.newSession cs user password content-base))))
 
+(def valid-session-config-options
+  #{:default-request-options :logger :user-object
+    :transaction-mode :transaction-timeout})
+
+(defn validate-session-config-options
+  [config-options]
+  (when-not (clojure.set/subset? (set (keys config-options))
+                                 valid-session-config-options)
+    (throw (IllegalArgumentException.
+            (str "Unknown configuration parameter passed to `create-session`. Only "
+                 valid-session-config-options
+                 " are recognized keywords.")))))
+
 (defn create-session
   "Create a Session for querying and transacting with. Parameter
   `db-info` describing database connection information must
@@ -615,7 +628,9 @@
   ([db-info]
    (create-session* db-info))
   ([db-info {:keys [default-request-options logger user-object
-                    transaction-mode transaction-timeout]}]
+                    transaction-mode transaction-timeout]
+             :as config-options}]
+   (validate-session-config-options config-options)
    (create-session db-info
                    nil
                    {:default-request-options default-request-options
@@ -623,7 +638,9 @@
                     :transaction-mode transaction-mode
                     :transaction-timeout transaction-timeout}))
   ([db-info content-source {:keys [default-request-options logger user-object
-                                   transaction-mode transaction-timeout]}]
+                                   transaction-mode transaction-timeout]
+                            :as config-options}]
+   (validate-session-config-options config-options)
    (let [session (create-session* db-info content-source)]
      (when (map? default-request-options)
        (.setDefaultRequestOptions session (make-request-options default-request-options)))
