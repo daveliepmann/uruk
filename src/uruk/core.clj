@@ -155,28 +155,34 @@
              :xml-name "cts:box"
              :xcc-type ValueType/CTS_BOX}
    :cts-circle {:ml->clj #(.asString %)
-                :clj->xdm #(let [[radius [latitude longitude]] %]
-                             (.asString (ValueFactory/newCtsCircle
-                                         (str radius)
-                                         (ValueFactory/newCtsPoint (str latitude)
-                                                                   (str longitude)))))
+                :clj->xdm (fn [[radius [latitude longitude]]]
+                            ;; Expects a 2-element vector containing a
+                            ;; number followed by a 2-element vector
+                            ;; of numbers
+                            (.asString (ValueFactory/newCtsCircle
+                                        (str radius)
+                                        (ValueFactory/newCtsPoint (str latitude)
+                                                                  (str longitude)))))
                 :xml-name "cts:circle"
                 :xcc-type ValueType/CTS_CIRCLE}
+
    :cts-point {:ml->clj #(.asString %)
-               :clj->xdm #(str (first %) ","
-                               (second %)) ;; Expects a 2-number sequence
+               :clj->xdm #(let [[latitude longitude] %]
+                            ;; Expects a 2-number sequence
+                            (.asString (ValueFactory/newCtsPoint (str latitude)
+                                                                 (str longitude))))
                :xml-name "cts:point"
                :xcc-type ValueType/CTS_POINT}
    :cts-polygon {:ml->clj #(.asString %)
-                 :clj->xdm #(let [vertices %]
-                              ;; Expects a sequence of 2-element sequences, each
-                              ;; describing successive vertices (points) of the
-                              ;; polygon
-                              (.asString (ValueFactory/newCtsPolygon
-                                          (mapv (fn [latitude longitude]
-                                                  (ValueFactory/newCtsPoint (str latitude)
-                                                                            (str longitude)))
-                                                vertices))))
+                 :clj->xdm (fn [vertices]
+                             ;; Expects a sequence of 2-element sequences, each
+                             ;; describing successive vertices (points) of the
+                             ;; polygon
+                             (.asString (ValueFactory/newCtsPolygon
+                                         (mapv (fn [[latitude longitude]]
+                                                 (ValueFactory/newCtsPoint (str latitude)
+                                                                           (str longitude)))
+                                               vertices))))
                  :xml-name "cts:polygon"
                  :xcc-type ValueType/CTS_POLYGON}
 
@@ -203,7 +209,7 @@
           :xml-name nil ;; TODO XXX ???
           :xcc-type ValueType/NODE}
    :null-node {:ml->clj java-json->clj-json
-               :clj->xdm nil
+               :clj->xdm #(ValueFactory/newNullNode %)
                :xml-name "null-node()"
                :xcc-type ValueType/NULL_NODE}
    :number-node {:ml->clj java->num
@@ -220,12 +226,15 @@
                             :xml-name nil ;; XXX ???
                             :xcc-type ValueType/PROCESSING_INSTRUCTION}
    :sequence {:ml->clj str
-              :clj->xdm identity ;; XXX WONTFIX -- see GitHub issue #8: "com.marklogic.xcc.exceptions.UnimplementedFeatureException - Setting variables that are sequences is not supported"
+              ;; :clj->xdm
+              ;; XXX WONTFIX -- see GitHub issue #8: "com.marklogic.xcc.exceptions.UnimplementedFeatureException - Setting variables that are sequences is not supported"
+              ;; https://github.com/marklogic/xcc-java/blob/master/com/marklogic/xcc/impl/RequestImpl.java#L92
               :xml-name nil ;; XXX ???
               :xcc-type ValueType/SEQUENCE}
    :text {;; FIXME causes XDMP-LEXVAL
           :ml->clj #(.asString %)
-          :clj->xdm identity  ;; TODO, also really :text-node
+          :clj->xdm (fn [s] (ValueFactory/newTextNode s)) ;; TODO FIXME
+          ;; really :text-node
           :xml-name "text()"
           :xcc-type ValueType/TEXT}
    :variable {;; XdmVariable. Unknown if the key used matches getValueType.
@@ -759,7 +768,7 @@
                                       (if as-is?
                                         value
                                         ((xcc-type->xdm-conv-fn type) value))))))
-               acc)
+               acc) ;; TODO use `doto` on `acc` in above block, instead of `setNewVariable` then returning `acc`?
              (doto request-factory (.setOptions (make-request-options options)))
              variables))
 

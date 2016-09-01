@@ -535,20 +535,85 @@
                                                       $my-variable"
                                  {:shape :single!
                                   :variables {"my-variable" {:value "http://www.google.com"
-                                                             :type :xs-any-uri}}}))))))))
+                                                             :type :xs-any-uri}}})))))
+
+      (testing "...null nodes, which can't be created as top-level objects (detail of exception should be 'XDMP-JSONDOC: Document is not JSON')"
+        (is (thrown? com.marklogic.xcc.exceptions.XQueryException
+                     (with-open [session (create-session db)]
+                       (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                       {:types :raw
+                                        :variables {"my-variable" {:value "x"
+                                                                   :type :null-node}}})))))
+
+      (testing "...elements"
+        (is (= "element()"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value "<foo/>"
+                                                                           :type :element}}}))))))
+
+      (testing "...array-nodes"
+        (is (= "array-node()"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value ["one" "two"]
+                                                                           :type :array-node}}}))))))
+
+      (testing "...documents (really document nodes)"
+        (is (= "document-node()"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<foo/>"
+                                                                           :type :document}}}))))))
+
+      (testing "...number nodes"
+        (is (= "number-node()"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value 1
+                                                                           :type :number-node}}}))))))
+
+      (testing "...XS Strings"
+        (is (= "xs:string"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value "i am a string"
+                                                                           :type :xs-string}}})))))))))
 
 ;; ;; TODO test all (minus unknown/as-yet-unused) variable types can be sent correctly:
-;; :binary :attribute :variable :xs-date :element :xs-hex-binary :array-node :xs-gday :xs-day-time-duration :duration :xs-date-time :node :xs-gyear :xs-string :number-node :document :xs-duration
-;; :js-array :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment :sequence :js-object :xs-gyear-month :xs-untyped-atomic :null-node :processing-instruction :xs-time :xs-year-month-duration :object-node :text
+;; :binary :attribute :variable :xs-date :xs-hex-binary :xs-gday :xs-day-time-duration :duration :xs-date-time :node :xs-gyear :xs-duration :js-array :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment :js-object :xs-gyear-month :xs-untyped-atomic  :processing-instruction :xs-time :xs-year-month-duration :object-node :text
 
 ;; XXX done:
+;; :document
+;;:null-node
  ;; :boolean-node
 ;; :xs-qname 
 ;; :xs-boolean
 ;; :xs-decimal :xs-double  :xs-float
 ;; :xs-any-uri
 ;; :cts-circle  :cts-point :cts-polygon :cts-box
-
+ ;; :element
+ ;; :array-node
+ ;; :sequence
+;; :number-node
+;;  :xs-string 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Invalid query
