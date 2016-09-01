@@ -231,10 +231,9 @@
               ;; https://github.com/marklogic/xcc-java/blob/master/com/marklogic/xcc/impl/RequestImpl.java#L92
               :xml-name nil ;; XXX ???
               :xcc-type ValueType/SEQUENCE}
-   :text {;; FIXME causes XDMP-LEXVAL
+   :text {;; really :text-node
           :ml->clj #(.asString %)
-          :clj->xdm (fn [s] (ValueFactory/newTextNode s)) ;; TODO FIXME
-          ;; really :text-node
+          :clj->xdm (fn [s] (ValueFactory/newObjectNode s)) ;; FIXME all conversion fns cause XDMP-LEXVAL
           :xml-name "text()"
           :xcc-type ValueType/TEXT}
    :variable {;; XdmVariable. Unknown if the key used matches getValueType.

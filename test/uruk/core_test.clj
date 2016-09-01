@@ -601,8 +601,8 @@
         (is (= "json:object"
                (with-open [session (create-session db)]
                  (result->type (execute-xquery session "xquery version \"1.0-ml\";
-                                  declare variable $my-variable external;
-                                  $my-variable"
+                                                        declare variable $my-variable external;
+                                                        $my-variable"
                                                {:types :raw
                                                 :variables {"my-variable" {:value {:json-key "json value"}
                                                                            :type :js-object}}}))))))
@@ -611,14 +611,27 @@
         (is (= "json:array"
                (with-open [session (create-session db)]
                  (result->type (execute-xquery session "xquery version \"1.0-ml\";
-                                  declare variable $my-variable external;
-                                  $my-variable"
+                                                        declare variable $my-variable external;
+                                                        $my-variable"
                                                {:types :raw
                                                 :variables {"my-variable" {:value ["a" "b" 1]
-                                                                           :type :js-array}}})))))))))
+                                                                           :type :js-array}}}))))))
+
+      (testing "...(JSON) object nodes"
+        ;; TODO I'd like to also be able to pass a JSON object that's a
+        ;; value, but that comes through as "text"
+        (is (= "object-node()"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                                        declare variable $my-variable external;
+                                                        $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value {:key "val"}
+                                                                           :type :object-node}}})))))))))
 
 ;; ;; TODO test all (minus unknown/as-yet-unused) variable types can be sent correctly:
-;; :binary :attribute :variable :xs-date :xs-hex-binary :xs-gday :xs-day-time-duration :duration :xs-date-time :node :xs-gyear :xs-duration :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment  :xs-gyear-month :xs-untyped-atomic  :processing-instruction :xs-time :xs-year-month-duration :object-node :text
+;; :binary :attribute :variable :duration :node :processing-instruction 
+;; :xs-date :xs-hex-binary :xs-gday :xs-day-time-duration :xs-date-time :xs-gyear :xs-duration :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment :xs-gyear-month :xs-untyped-atomic :xs-time :xs-year-month-duration
 
 ;; XXX done:
 ;; :document
@@ -636,6 +649,11 @@
 ;;  :xs-string 
 ;; :js-object
 ;; :js-array
+;; :object-node
+
+;; XXX shouldn't be sent:
+ ;; :text
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Invalid query
