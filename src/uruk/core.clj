@@ -196,11 +196,11 @@
              :xcc-type ValueType/ELEMENT}
 
    :js-array {:ml->clj java-json->clj-json
-              :clj->xdm #(ValueFactory/newJSArray (json/write-str %))
+              :clj->xdm #(json/write-str %)
               :xml-name "json:array"
               :xcc-type ValueType/JS_ARRAY}
    :js-object {:ml->clj java-json->clj-json
-               :clj->xdm #(ValueFactory/newJSObject (json/write-str %))
+               :clj->xdm #(json/write-str %)
                :xml-name "json:object"
                :xcc-type ValueType/JS_OBJECT}
 
