@@ -380,15 +380,33 @@
                                     :shape :single!})))))
 
     (testing "...variables passed `as-is?` must be passed untouched to MarkLogic"
-      (is (= "test string" (with-open [session (create-session db)]
-                             (execute-xquery session "xquery version \"1.0-ml\";
+      (testing "...with shorthand variable format"
+               (is (= "test string" (with-open [session (create-session db)]
+                                      (execute-xquery session "xquery version \"1.0-ml\";
                                                       declare variable $my-variable external;
                                                       $my-variable"
-                                             {:variables {"my-variable" "test string"}
-                                              :shape :single!
-                                              :as-is? :true})))))
+                                                      {:variables {"my-variable" "test string"}
+                                                       :shape :single!
+                                                       :as-is? :true})))))
 
-    (testing "...Clojure booleans must automatically convert to XdmVariable boolean"
+      (testing "...with value-declared variable format"
+        (is (= "test string" (with-open [session (create-session db)]
+                               (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                               {:variables {"my-variable" {:value "test string"}}
+                                                :shape :single!
+                                                :as-is? :true}))))))
+
+    (testing "...Clojure booleans must convert as instructed to XDM/XS boolean types"
+      (is (= "xs:boolean"
+             (with-open [session (create-session db)]
+               (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                             {:types :raw
+                                              :variables {"my-variable" {:value false
+                                                                         :type :xs-boolean}}})))))
       (is (= "boolean-node()" (result->type
                                (with-open [session (create-session db)]
                                  (execute-xquery session "xquery version \"1.0-ml\";
@@ -404,16 +422,132 @@
                                     {:variables {"my-variable" {:value false
                                                                 :type :boolean-node}}
                                      :shape :single!}))))
+
+      (is (false? (with-open [session (create-session db)]
+                    (execute-xquery session "xquery version \"1.0-ml\";
+                                             declare variable $my-variable as xs:boolean external;
+                                             $my-variable"
+                                    {:shape :single!
+                                     :variables {"my-variable" {:value false
+                                                                :type :xs-boolean}}}))))
+
       (is (true? (with-open [session (create-session db)]
                    (execute-xquery session "xquery version \"1.0-ml\";
                                 declare variable $my-variable as boolean-node() external;
                                 $my-variable"
                                    {:variables {"my-variable" {:value true
                                                                :type :boolean-node}}
-                                    :shape :single!})))))))
+                                    :shape :single!})))))
 
-;; TODO more variable testing
-;; TODO test (all?) variable types
+    (testing "...Clojure numeric types must convert as instructed to appropriate XS types"
+      (testing "...xs:float"
+        (is (= "xs:float"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                         declare variable $my-variable external;
+                                         $my-variable"
+                                               {:variables {"my-variable" {:value 0.5
+                                                                           :type :xs-float}}
+                                                :types :raw}))))))
+
+      (testing "...xs:double"
+        (is (= "xs:double"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                         declare variable $my-variable external;
+                                         $my-variable"
+                                               {:variables {"my-variable" {:value 0.5
+                                                                           :type :xs-double}}
+                                                :types :raw}))))))
+
+      (testing "...xs:decimal"
+        (is (= "xs:decimal"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                         declare variable $my-variable external;
+                                         $my-variable"
+                                               {:variables {"my-variable" {:value 0.5
+                                                                           :type :xs-decimal}}
+                                                :types :raw})))))))
+
+    (testing "...must be able to create CTS types from Clojure data structures"
+      (is (= "cts:point"
+             (with-open [session (create-session db)]
+               (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                             {:types :raw
+                                              :variables {"my-variable" {:value [12 5]
+                                                                         :type :cts-point}}})))))
+
+      (is (= "cts:polygon"
+             (with-open [session (create-session db)]
+               (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                             {:types :raw
+                                              :variables {"my-variable" {:value [[1 1] [0 0] [1 0]]
+                                                                         :type :cts-polygon}}})))))
+
+      (is (= "cts:circle"
+             (with-open [session (create-session db)]
+               (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                             {:types :raw
+                                              :variables {"my-variable" {:value [5 [0 0]]
+                                                                         :type :cts-circle}}})))))
+
+      (is (= "cts:box"
+             (with-open [session (create-session db)]
+               (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                             {:types :raw
+                                              :variables {"my-variable" {:value [1 2 3 4]
+                                                                         :type :cts-box}}}))))))
+
+    (testing "...must be able to create miscellaneous XS types from Clojure data"
+      (testing "...QNames"
+        (is (= "xs:QName"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                         declare variable $my-variable external;
+                                         $my-variable"
+                                               {:variables {"my-variable" {:value "test-qname"
+                                                                           :type :xs-qname}}
+                                                :types :raw}))))))
+
+      (testing "...URIs"
+        (is (= "xs:anyURI"
+               (result->type (with-open [session (create-session db)]
+                               (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value "http://www.google.com"
+                                                                           :type :xs-any-uri}}})))))
+
+        (is (= "http://www.google.com"
+               (with-open [session (create-session db)]
+                 (execute-xquery session "xquery version \"1.0-ml\";
+                                                      declare variable $my-variable external;
+                                                      $my-variable"
+                                 {:shape :single!
+                                  :variables {"my-variable" {:value "http://www.google.com"
+                                                             :type :xs-any-uri}}}))))))))
+
+;; ;; TODO test all (minus unknown/as-yet-unused) variable types can be sent correctly:
+;; :binary :attribute :variable :xs-date :element :xs-hex-binary :array-node :xs-gday :xs-day-time-duration :duration :xs-date-time :node :xs-gyear :xs-string :number-node :document :xs-duration
+;; :js-array :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment :sequence :js-object :xs-gyear-month :xs-untyped-atomic :null-node :processing-instruction :xs-time :xs-year-month-duration :object-node :text
+
+;; XXX done:
+ ;; :boolean-node
+;; :xs-qname 
+;; :xs-boolean
+;; :xs-decimal :xs-double  :xs-float
+;; :xs-any-uri
+;; :cts-circle  :cts-point :cts-polygon :cts-box
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -509,7 +643,6 @@
                        xdmp:document-delete('/content-factory/new-doc');"
                       {:shape :single}))))
 
-;; TODO insert as-is strings
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; TODO security options
