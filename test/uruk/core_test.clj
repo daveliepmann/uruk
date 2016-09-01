@@ -381,13 +381,13 @@
 
     (testing "...variables passed `as-is?` must be passed untouched to MarkLogic"
       (testing "...with shorthand variable format"
-               (is (= "test string" (with-open [session (create-session db)]
-                                      (execute-xquery session "xquery version \"1.0-ml\";
+        (is (= "test string" (with-open [session (create-session db)]
+                               (execute-xquery session "xquery version \"1.0-ml\";
                                                       declare variable $my-variable external;
                                                       $my-variable"
-                                                      {:variables {"my-variable" "test string"}
-                                                       :shape :single!
-                                                       :as-is? :true})))))
+                                               {:variables {"my-variable" "test string"}
+                                                :shape :single!
+                                                :as-is? :true})))))
 
       (testing "...with value-declared variable format"
         (is (= "test string" (with-open [session (create-session db)]
@@ -595,25 +595,47 @@
                                   $my-variable"
                                                {:types :raw
                                                 :variables {"my-variable" {:value "i am a string"
-                                                                           :type :xs-string}}})))))))))
+                                                                           :type :xs-string}}}))))))
+
+      (testing "...JSON objects"
+        (is (= "json:object"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value {:json-key "json value"}
+                                                                           :type :js-object}}}))))))
+
+      (testing "...JSON arrays"
+        (is (= "json:array"
+               (with-open [session (create-session db)]
+                 (result->type (execute-xquery session "xquery version \"1.0-ml\";
+                                  declare variable $my-variable external;
+                                  $my-variable"
+                                               {:types :raw
+                                                :variables {"my-variable" {:value ["a" "b" 1]
+                                                                           :type :js-array}}})))))))))
 
 ;; ;; TODO test all (minus unknown/as-yet-unused) variable types can be sent correctly:
-;; :binary :attribute :variable :xs-date :xs-hex-binary :xs-gday :xs-day-time-duration :duration :xs-date-time :node :xs-gyear :xs-duration :js-array :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment :js-object :xs-gyear-month :xs-untyped-atomic  :processing-instruction :xs-time :xs-year-month-duration :object-node :text
+;; :binary :attribute :variable :xs-date :xs-hex-binary :xs-gday :xs-day-time-duration :duration :xs-date-time :node :xs-gyear :xs-duration :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment  :xs-gyear-month :xs-untyped-atomic  :processing-instruction :xs-time :xs-year-month-duration :object-node :text
 
 ;; XXX done:
 ;; :document
 ;;:null-node
- ;; :boolean-node
+;; :boolean-node
 ;; :xs-qname 
 ;; :xs-boolean
 ;; :xs-decimal :xs-double  :xs-float
 ;; :xs-any-uri
 ;; :cts-circle  :cts-point :cts-polygon :cts-box
- ;; :element
- ;; :array-node
- ;; :sequence
+;; :element
+;; :array-node
+;; :sequence
 ;; :number-node
 ;;  :xs-string 
+;; :js-object
+;; :js-array
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Invalid query
@@ -634,23 +656,23 @@
   (testing "Shape parameter must force result values to conform"
     (testing "...:single shape must return one result"
       (is (< 1 (count (with-open [sess (create-session db)]
-                       (execute-xquery sess "array-node {1,2,3}"
-                                       {:shape :single}))))))
+                        (execute-xquery sess "array-node {1,2,3}"
+                                        {:shape :single}))))))
 
     (testing "...:single! shape must return one result"
       (is (< 1 (count (with-open [sess (create-session db)]
-                     (execute-xquery sess "array-node {1,2,3}"
-                                     {:shape :single!}))))))
+                        (execute-xquery sess "array-node {1,2,3}"
+                                        {:shape :single!}))))))
 
     (testing "...query used for other shape tests must return list of one element"
       (is (= 1 (count (with-open [sess (create-session db)]
-                     (execute-xquery sess "array-node {1,2,3}"))))))
+                        (execute-xquery sess "array-node {1,2,3}"))))))
 
     (testing "...:single! must throw an exception if multiple results are returned"
       (is (thrown? clojure.lang.ExceptionInfo
-                     (with-open [sess (create-session db)]
-                       (execute-xquery sess "xdmp:get-current-roles()"
-                                       {:shape :single!})))))
+                   (with-open [sess (create-session db)]
+                     (execute-xquery sess "xdmp:get-current-roles()"
+                                     {:shape :single!})))))
 
     (testing "...:none shaped result must be nil"
       (is (nil?
