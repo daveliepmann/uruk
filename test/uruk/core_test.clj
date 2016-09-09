@@ -47,7 +47,7 @@
     (testing "...with URI, user, password"
       (is (= "Hello world"
              (with-open [session (create-session {:uri "xdbc://localhost:8383/"
-                                                  :user "rest-admin" :password "x"})]
+                                                  :user "test-admin" :password "uruktesting"})]
                (-> session
                    (.submitRequest (.newAdhocQuery session
                                                    "\"Hello world\""))
@@ -264,16 +264,16 @@
       (testing "with hosted content source using user, password, content-base"
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
-                                                         {:user "rest-admin"
-                                                          :password "x"
+                                                         {:user "test-admin"
+                                                          :password "uruktesting"
                                                           :content-base "TutorialDB"})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
       (testing "with hosted content source using user and password"
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
-                                                         {:user "rest-admin"
-                                                          :password "x"})
+                                                         {:user "test-admin"
+                                                          :password "uruktesting"})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
       ;; TODO once we want to delve into extreme complexity of ConnectionProvider
@@ -652,7 +652,7 @@
 ;; :object-node
 
 ;; XXX shouldn't be sent:
- ;; :text
+;; :text
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -761,7 +761,7 @@
 
 ;; (comment
 ;;   (session->map (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "rest-admin" :password "x"
+;;                                     :user "test-admin" :password "uruktesting"
 ;;                                     :content-base "TutorialDB"}
 ;;                                    {} (uri-content-source "xdbc://localhost:8383/"
 ;;                                                           (security-options TODO)))))
@@ -792,7 +792,7 @@
 (deftest content-source-creation-with-host-port-user-pwd
   (testing "content source creation from host and port"
     (let [cs (make-hosted-content-source "localhost" 8383
-                                         {:user "rest-admin" :password "x"})]
+                                         {:user "test-admin" :password "uruktesting"})]
       (and (instance? ContentSource cs)
            (= 8383 (.getPort (.getConnectionProvider cs)))
            (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
@@ -800,18 +800,18 @@
 ;; TODO with SSLContext
 ;; (comment
 ;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "rest-admin" :password "x"
+;;                                     :user "test-admin" :password "uruktesting"
 ;;                                     :content-base "TutorialDB"}
 ;;                                    (hosted-content-source "localhost" 8383
-;;                                                           "rest-admin" "x" "TutorialDB"
+;;                                                           "test-admin" "x" "TutorialDB"
 ;;                                                           (security-options TODO))
 ;;                                    {}))
 
 ;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "rest-admin" :password "x"
+;;                                     :user "test-admin" :password "uruktesting"
 ;;                                     :content-base "TutorialDB"}
 ;;                                    (managed-content-source connection-provider ;; TODO implement https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/ConnectionProvider.html interface
-;;                                                            "rest-admin" "x" "TutorialDB")
+;;                                                            "test-admin" "x" "TutorialDB")
 ;;                                    {})))
 
 (deftest content-src-options
@@ -1038,7 +1038,7 @@
         (is (= "binary()"
                (result->type (with-open [session (create-session db)]
                                (execute-xquery session (str "xquery version \"1.0-ml\";
-                                                       xdmp:external-binary(\""
+                                                             xdmp:external-binary(\""
                                                             path-to-img "\");")
                                                {:types :raw})))))
         (is (= (Class/forName "[B")
@@ -1052,22 +1052,25 @@
     (testing "......XSAnyURI"
       (with-open [session (create-session db)]
         (is (= "xs:anyURI"
-               (result->type (execute-xquery session "fn:resolve-uri(\"hello/goodbye.xml\", \"http://mycompany/default.xqy\")"
+               (result->type (execute-xquery session "fn:resolve-uri(\"hello/goodbye.xml\",
+                                                                     \"http://mycompany/default.xqy\")"
                                              {:types :raw})))))
 
       (with-open [session (create-session db)]
         (is (= "http://mycompany/hello/goodbye.xml"
                (execute-xquery session "fn:resolve-uri(\"hello/goodbye.xml\",
-                                                 \"http://mycompany/default.xqy\")"
+                                                       \"http://mycompany/default.xqy\")"
                                {:shape :single!})))))
 
     (testing "......XSBase64Binary"
       (is (= "xs:base64Binary"
              (result->type (with-open [session (create-session db)]
-                             (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")" {:types :raw})))))
+                             (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")"
+                                             {:types :raw})))))
       (is (= (Class/forName "[B")
              (.getClass (with-open [session (create-session db)]
-                          (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")" {:shape :single!}))))))
+                          (execute-xquery session "xs:base64Binary(\"bmhnY2p2\")"
+                                          {:shape :single!}))))))
 
     (testing "......XSBoolean"
       (with-open [session (create-session db)]
@@ -1076,9 +1079,9 @@
                                              {:types :raw}))))
         (is (false? (execute-xquery session "fn:doc-available(\"derp\")" {:shape :single!}))) 
         (is (= "xs:boolean"
-               (result->type (execute-xquery session "xdmp:exists(collection())"
+               (result->type (execute-xquery session "fn:true()"
                                              {:types :raw}))))
-        (is (true? (execute-xquery session "xdmp:exists(collection())" {:shape :single!})))))
+        (is (true? (execute-xquery session "fn:true()" {:shape :single!})))))
 
     (testing "......XSDate"
       (with-open [session (create-session db)]
