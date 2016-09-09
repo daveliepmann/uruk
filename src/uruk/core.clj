@@ -98,7 +98,7 @@
   (cond
     (string? xml) xml
     (vector? xml) (xml/emit-str (xml/sexp-as-element xml))
-    (instance? clojure.data.xml.Element xml) (xml/emit-str xml)))
+    (instance? clojure.data.xml.node.Element xml) (xml/emit-str xml)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; XCC type table.
