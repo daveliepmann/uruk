@@ -1,5 +1,5 @@
 # uruk
-<img align="right" src="uruk/warka-dictionary.jpg"/>
+<img align="right" src="warka-dictionary.jpg"/>
 A Clojure library wrapping the MarkLogic XML Content Connector for Java (XCC/J). Made to help you access your Enterprise NoSQL database from Clojure.
 
 Named after the [ancient Mesopotamian city-state](http://www.metmuseum.org/toah/hd/uruk/hd_uruk.htm) and [period](http://www.metmuseum.org/toah/hd/wrtg/hd_wrtg.htm) in which some of the oldest known writing has been found. One can see Uruk as perhaps the first document database—and it certainly wasn’t organized relationally.
