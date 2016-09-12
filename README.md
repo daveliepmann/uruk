@@ -1,10 +1,10 @@
 # uruk
 [<img align="right" src="gilgamesh-tablet.jpg"/>](https://en.wikipedia.org/wiki/File:Tablet_V_of_the_Epic_of_Gligamesh.JPG)
-A Clojure library wrapping the MarkLogic XML Content Connector for Java (XCC/J). Made to help you access your Enterprise NoSQL database from Clojure.
+Uruk is a Clojure library wrapping MarkLogic's XML Content Connector for Java (XCC/J). Uruk empowers you to access your Enterprise NoSQL database from Clojure.
 
-Named after the [ancient Mesopotamian city-state](http://www.metmuseum.org/toah/hd/uruk/hd_uruk.htm) and [period](http://www.metmuseum.org/toah/hd/wrtg/hd_wrtg.htm) in which some of the oldest known writing has been found. One can see Uruk as perhaps the first document database—and it certainly wasn’t organized relationally.
+The name Uruk comes from the [ancient Mesopotamian city-state](http://www.metmuseum.org/toah/hd/uruk/hd_uruk.htm) and [period](http://www.metmuseum.org/toah/hd/wrtg/hd_wrtg.htm) in which some of the oldest known writing has been found. One can see Uruk as perhaps the first document database—and it certainly wasn’t organized relationally.
 
-Sponsored by [LambdaWerk](https://lambdawerk.com/home).
+This project is sponsored by [LambdaWerk](https://lambdawerk.com/home).
 
 ## Installation
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
@@ -14,8 +14,6 @@ In your *project.clj* dependencies: `[uruk "0.3.2"]`
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
 ## Usage
-[<img align="right" src="warka-dictionary.jpg"/>](https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg)
-
 For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
 
 Basic usage takes the form of:
@@ -220,6 +218,7 @@ This function takes an optional map describing document metadata, including Cont
 See `uruk.core/valid-content-creation-options`, which is a Clojurey version of the possibilities described by [ContentCreateOptions](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html).
 
 
+[<img src="warka-dictionary.jpg"/>](https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg)
 ## TODO
   - use clojure.spec once Clojure 1.9 is stable
   - ensure insert-element robustly covers needed use cases
