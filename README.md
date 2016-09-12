@@ -218,7 +218,7 @@ This function takes an optional map describing document metadata, including Cont
 See `uruk.core/valid-content-creation-options`, which is a Clojurey version of the possibilities described by [ContentCreateOptions](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html).
 
 
-<p align="center">[<img src="warka-dictionary.jpg"/>](https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg)</p>
+<p align="center"><a href="https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"><img src="warka-dictionary.jpg"/></a></p>
 ## TODO
   - use clojure.spec once Clojure 1.9 is stable
   - ensure insert-element robustly covers needed use cases
