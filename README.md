@@ -1,4 +1,5 @@
 # uruk
+<img align="right" src="Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"/>
 
 A Clojure library wrapping the MarkLogic XML Content Connector for Java (XCC/J). Made to help you access your Enterprise NoSQL database from Clojure.
 
@@ -14,6 +15,8 @@ In your *project.clj* dependencies: `[uruk "0.3.2"]`
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
 ## Usage
+<img align="right" src="Tablet_V_of_the_Epic_of_Gilgamesh.JPG"/>
+
 For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
 
 Basic usage takes the form of:
