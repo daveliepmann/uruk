@@ -67,7 +67,7 @@ This lets you inspect result types with `result->type`:
 => "xs:string"
 ```
 
-Those result types form the keys to the `types` map, whose values are functions used to transform result items into more manageable Clojure types. For most types that’s as simple as `"document-node()" #(.asString %)` (for XdmDocuments) or reading the number contained in a string. But if you need more in-depth handling of results, you can override the default mappings–a la carte!–by passing a map to the aforementioned `types` parameter, like so:
+Those result types are matched with `:xml-name` values in the `xcc-types` look-up table, which contains the `:ml->clj` function that Uruk uses to transform result items into more manageable Clojure types. (For most types that’s as simple as `#(.asString %)` (for XdmDocuments) or reading the number contained in a string. But if you need more in-depth handling of results, you can override the default mappings *a la carte* by passing a map to the aforementioned `types` parameter, like so:
 
 ``` clojure
 (with-open [session (uruk/create-session db)]
@@ -75,10 +75,11 @@ Those result types form the keys to the `types` map, whose values are functions 
                        "xquery version \"1.0-ml\"; doc('/dir/unwieldy.xml')"
                        {:types {"document-node()" #(custom-function %)})})
 ```
+The keys for this map are used to look up `:xml-name`, and the values replace `:ml->clj`.
 
 ### Shape
 
-For convenience, specifying `:shape` in the configuration map attempts to mold query results as specified:
+For convenience, you can mold query results by specifying `:shape` in the configuration map:
 
 | `:shape` value | Result |
 | ------------- | ------------- |
@@ -91,10 +92,11 @@ For example, to clean up our simple example from earlier:
 ``` clojure
 (with-open [session (uruk/create-session db)]
   (uruk/execute-xquery session "\"hello world\"" {:shape :single}))
+=> "hello world"
 ```
 
 ### Options
-Uruk enables you to set Request options on your queries.
+Uruk enables you to set [Request options](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/RequestOptions.html) on your queries.
 
 Request options are passed as a map to the `:options` key in the config map. All keys in that inner map must be present in `valid-request-options`. For example, to retrieve a document as a stream, use the `:cache-result` request option, which corresponds to MarkLogic's `RequestOptions.setCacheResult`. (Notice that we also specify no type conversion, because otherwise we would get the document content itself.)
 
@@ -103,7 +105,7 @@ Request options are passed as a map to the `:options` key in the config map. All
   (uruk/execute-xquery sess "xquery version \"1.0-ml\"; doc('/content-factory/new-doc')"
                        {:types :raw
                         :options {:cache-result false}}))
-;; => #object[com.marklogic.xcc.impl.StreamingResultSequence 0x6d7f6 "StreamingResultSequence: closed=true"]
+=> #object[com.marklogic.xcc.impl.StreamingResultSequence 0x6d7f6 "StreamingResultSequence: closed=true"]
 ```
 
 ### Variables
@@ -141,9 +143,9 @@ Depending on the XdmValue type, conversion of expected Clojure values is automat
                         :shape :single!}))
 ```
 
-Of particular interest is that variables that are XML document-nodes or elements can be created by passing either a String representation, a hiccup-style vector, or a `clojure.data.xml.Element`.
+Of particular interest is that variables that are XML document-nodes or elements can be created by passing either a String representation, a hiccup-style vector, or a `clojure.data.xml.node.Element`. (Uruk uses `clojure.data.xml 0.1.0-beta2` in order to get its namespace support.)
 
-See `uruk/wrap-val` for which values are converted and what they expect. If you need to override those conversions, set the `:as-is?` key to `true` inside the map describing the variable. This puts the onus of producing the correct object on you. For instance, if we were to set `:as-is?` for that `booleanNode`:
+Values are converted according to the `:clj->xdm` key in `xcc-types`. If you need to override those conversions, set the `:as-is?` key to `true` inside the map describing the variable. This puts the onus of producing the correct object on you. For instance, we could set `:as-is?` for that `booleanNode`:
 ``` clojure
 (with-open [session (uruk/create-session db)]
   (uruk/execute-xquery session "xquery version \"1.0-ml\";
@@ -196,7 +198,7 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
 
 ### Inserting Clojure XML Elements
 
-You can insert `clojure.data.xml.Element`s as content:
+You can insert `clojure.data.xml.node.Element` objects as content:
 
 ``` clojure
 (with-open [session (uruk/create-session db)]
