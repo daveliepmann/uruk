@@ -1,6 +1,6 @@
 # uruk
 <img align="right"
-src="Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661 - small.jpg"/>
+src="Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661-small.jpg"/>
 A Clojure library wrapping the MarkLogic XML Content Connector for Java (XCC/J). Made to help you access your Enterprise NoSQL database from Clojure.
 
 Named after the [ancient Mesopotamian city-state](http://www.metmuseum.org/toah/hd/uruk/hd_uruk.htm) and [period](http://www.metmuseum.org/toah/hd/wrtg/hd_wrtg.htm) in which some of the oldest known writing has been found. One can see Uruk as perhaps the first document database—and it certainly wasn’t organized relationally.
@@ -15,7 +15,7 @@ In your *project.clj* dependencies: `[uruk "0.3.2"]`
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
 ## Usage
-<img align="right" src="Tablet_V_of_the_Epic_of_Gilgamesh - small.JPG"/>
+<img align="right" src="Tablet_V_of_the_Epic_of_Gilgamesh-small.JPG"/>
 
 For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
 
