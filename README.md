@@ -30,14 +30,14 @@ Basic usage takes the form of:
 ```
 ...which in this case should return `("hello world")` (if you provide valid credentials).
 
-Let's `def` our database information for concision's sake:
+Let's `def` our database information for brevity in the rest of our examples:
 ``` clojure
 (def db {:uri "xdbc://localhost:8383/"
          :user "rest-admin" :password "password"
          :content-base "TutorialDB"})
 ```
 
-Lots of query functionality relies on the optional configuration map passed to functions `execute-query` and `execute-module`:
+Using that database info, let's take an overview of query functionality. Most use cases are handled by passing an optional configuration map to functions `execute-query` or `execute-module`, like so:
 
 ``` clojure
 (with-open [session (uruk/create-session db)]
@@ -48,7 +48,7 @@ Lots of query functionality relies on the optional configuration map passed to f
                         :variables {:a "a"}
                         :shape :single}))
 ```
-Each key in that map is described below.
+Each optional key in that configuration map is described below.
 
 ### Types
 Basic type conversion is performed automatically for most [XCC types](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/package-summary.html). If for any reason you need access to the raw results, use the `:types` key in the config map, passing `:raw` like so:

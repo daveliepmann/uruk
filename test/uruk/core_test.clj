@@ -1255,3 +1255,19 @@
                                         fn:subtract-dateTimes-yielding-yearMonthDuration(xs:dateTime(\"2000-01-15T12:01:00.000Z\"),
                                                                                          xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
                                {:shape :single!})))))))
+
+(deftest custom-fns
+  (testing "Custom response handling functions"
+    (with-open [session (create-session db)]
+      (instance? com.marklogic.xcc.types.impl.XsBooleanImpl
+                 (execute-xquery session "fn:doc-available(\"derp\")"
+                                 {:shape :single!
+                                  :types {"xs:boolean" identity}})))
+    (with-open [session (create-session db)]
+      (= "false" (execute-xquery session "fn:doc-available(\"derp\")"
+                                 {:shape :single!
+                                  :types {"xs:boolean" #(.asString %)}})))
+    (with-open [session (create-session db)]
+      (= false (execute-xquery session "fn:doc-available(\"derp\")"
+                               {:shape :single!
+                                :types {"xs:boolean" #(.asBoolean %)}})))))
