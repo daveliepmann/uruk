@@ -14,6 +14,8 @@ In your *project.clj* dependencies: `[uruk "0.3.2"]`
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
 ## Usage
+To play around with Uruk locally, you'll need to install and configure MarkLogic on your machine per the [documentation](https://docs.marklogic.com/guide/installation/procedures#id_28962). If you're going to run `lein test`, make sure you expose the necessary ports and create the `test-admin` user with sufficient permissions.
+
 For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
 
 Basic usage takes the form of:
