@@ -15,9 +15,9 @@ In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an al
 
 ## Usage
 ### MarkLogic installation
-To play around with Uruk locally, you'll need to install and configure MarkLogic on your machine per the [documentation](https://docs.marklogic.com/guide/installation/procedures#id_28962). Make sure you create a user to run the examples.
+To play around with Uruk locally, you'll need to install and configure MarkLogic on your machine per the [documentation](https://docs.marklogic.com/guide/installation/procedures#id_28962). Make sure you create a user to run the examples. Start the MarkLogic server and you're ready to go.
 
-In addition, to run the tests (which is a useful way to explore the wide variety of query functionality), you must [create](http://localhost:8001/user-summary.xqy?section=security) a "test-admin" user with password "uruktesting", roles of "rest-admin" and "rest-writer", and default read/write/execute permissions for "rest-writer" on all items created. You must also [create TutorialDB](https://developer.marklogic.com/learn/java/setup#create-a-database) and [configure](http://localhost:8000/appservices/) it to add a REST API instance at port 8383. Finally, you must add the environment variable `URUK_TEST_IMG_PATH` (e.g. "export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico") in your Bash profile (*.bashrc*).
+In addition, to run the tests (which is a useful way to explore the wide variety of query functionality), you must [create](http://localhost:8001/user-summary.xqy?section=security) a "test-admin" user with password "uruktesting", roles of "rest-admin" and "rest-writer", and default read/write/execute permissions for "rest-writer" on all items created. You must also [create TutorialDB](https://developer.marklogic.com/learn/java/setup#create-a-database) and [configure](http://localhost:8000/appservices/) it to add a REST API instance at port 8383. Finally, you must add the environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) in your Bash profile (*.bashrc*).
 
 ### Examples of using Uruk
 For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
