@@ -14,10 +14,21 @@ In your *project.clj* dependencies: `[uruk "0.3.2"]`
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
 ## Usage
-### MarkLogic installation
-To play around with Uruk locally, you'll need to install and configure MarkLogic on your machine per the [documentation](https://docs.marklogic.com/guide/installation/procedures#id_28962). Make sure you create a user to run the examples. Start the MarkLogic server and you're ready to go.
 
-In addition, to run the tests (which is a useful way to explore the wide variety of query functionality), you must [create](http://localhost:8001/user-summary.xqy?section=security) a "test-admin" user with password "uruktesting", roles of "rest-admin" and "rest-writer", and default read/write/execute permissions for "rest-writer" on all items created. You must also [create TutorialDB](https://developer.marklogic.com/learn/java/setup#create-a-database) and [configure](http://localhost:8000/appservices/) it to add a REST API instance at port 8383. Finally, you must add the environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) in your Bash profile (*.bashrc*).
+### MarkLogic installation
+
+To play around with Uruk locally and to run the tests, you'll need to install and configure MarkLogic on your machine.
+
+* Install and start a local MarkLogic server via the [Install Instructions](https://docs.marklogic.com/guide/installation/procedures#id_28962).
+
+* Navigate to http://localhost:8000/appservices/ and follow the [Setup Instructions](https://developer.marklogic.com/learn/java/setup#create-a-database) to (a) create a TutorialDB database, (b) create a REST API instance (**use port 8383**), and (c) create some initial REST users. 
+
+| Username | Password | Details | Purpose | 
+| --- | --- | --- | --- |
+| 'test-admin' | 'uruktesting' | roles of **'rest-admin'** and **'rest-writer'**, <br/>default read/write/execute permissions for 'rest-writer' on all items created | Necessary to run tests |
+| 'rest-admin' | 'x' | roles of **'xa'** and **'rest-admin'** | Necessary to run the examples in this readme | 
+
+* Finally, you must add the environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) in your Bash profile (*.bashrc*).
 
 ### Examples of using Uruk
 For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
@@ -31,7 +42,7 @@ Basic usage takes the form of:
 ...of which a concrete example is:
 ``` clojure
 (with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
-                                          :user "rest-writer" :password "password"})]
+                                          :user "rest-admin" :password "x"})]
   (uruk/execute-xquery session "\"hello world\""))
 ```
 ...which in this case should return `("hello world")` (if you provide valid credentials).
@@ -39,7 +50,7 @@ Basic usage takes the form of:
 Let's `def` our database information for brevity in the rest of our examples:
 ``` clojure
 (def db {:uri "xdbc://localhost:8383/"
-         :user "rest-admin" :password "password"
+         :user "rest-admin" :password "x"
          :content-base "TutorialDB"})
 ```
 
