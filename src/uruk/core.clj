@@ -530,7 +530,7 @@
                               :preemptive-auth preemptive-auth})))
 
 (defn make-hosted-content-source
-  "Returna a ContentSource object according to the given `host` String
+  "Return a ContentSource object according to the given `host` String
   and integer `port`, and optionally a configuration map defining the
   `user` and `password`, `content-base`, `security-options`, and/or
   default Logger object and boolean flag for whether basic
@@ -582,7 +582,7 @@
   [{:keys [uri user password content-base]} & [content-source]]
   (let [cs (if (instance? ContentSource content-source)
              content-source
-             (ContentSourceFactory/newContentSource (URI. uri)))]
+             (make-uri-content-source (URI. uri)))]
     (cond
       (and (nil? content-base)
            (or (nil? user)
@@ -613,6 +613,24 @@
                  valid-session-config-options
                  " are recognized keywords.")))))
 
+(defn configure-session
+  ;; TODO docstring
+  [session {:keys [default-request-options logger user-object
+                   transaction-mode transaction-timeout]
+            :as config-options}]
+  (when (map? default-request-options)
+    (.setDefaultRequestOptions session (make-request-options default-request-options)))
+  (when (instance? Logger logger)
+    (.setLogger session logger))
+  ;; NB: the following is not the strictest test
+  (when (instance? Object user-object)
+    (.setUserObject session user-object))
+  (when (keyword? transaction-mode)
+    (.setTransactionMode session (->transaction-mode transaction-mode)))
+  (when (integer? transaction-timeout)
+    (.setTransactionTimeout session transaction-timeout))
+  session)
+
 (defn create-session
   "Create a Session for querying and transacting with. Parameter
   `db-info` describing database connection information must
@@ -635,6 +653,7 @@
   info URI."
   ([db-info]
    (create-session* db-info))
+
   ([db-info {:keys [default-request-options logger user-object
                     transaction-mode transaction-timeout]
              :as config-options}]
@@ -645,23 +664,22 @@
                     :logger logger :user-object user-object
                     :transaction-mode transaction-mode
                     :transaction-timeout transaction-timeout}))
+
   ([db-info content-source {:keys [default-request-options logger user-object
                                    transaction-mode transaction-timeout]
                             :as config-options}]
    (validate-session-config-options config-options)
-   (let [session (create-session* db-info content-source)]
-     (when (map? default-request-options)
-       (.setDefaultRequestOptions session (make-request-options default-request-options)))
-     (when (instance? Logger logger)
-       (.setLogger session logger))
-     ;; NB: the following is not the strictest test
-     (when (instance? Object user-object)
-       (.setUserObject session user-object))
-     (when (keyword? transaction-mode)
-       (.setTransactionMode session (->transaction-mode transaction-mode)))
-     (when (integer? transaction-timeout)
-       (.setTransactionTimeout session transaction-timeout))
-     session)))
+   (configure-session (create-session* db-info content-source) config-options)))
+
+(defn create-default-session
+  ;; TODO docstring
+  ([content-source]
+   (create-default-session content-source nil))
+  ([content-source {:keys [default-request-options logger user-object
+                           transaction-mode transaction-timeout]
+                    :as config-options}]
+   (validate-session-config-options config-options)
+   (configure-session (create-session* {} content-source) config-options)))
 
 ;; TODO require privilege
 ;; (defn session-cb-metadata
