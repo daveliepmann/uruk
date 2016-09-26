@@ -605,6 +605,9 @@
     :transaction-mode :transaction-timeout})
 
 (defn validate-session-config-options
+  "Raises an error if the given configuration options are invalid for
+  a MarkLogic session. See `valid-session-config-options` and
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html"
   [config-options]
   (when-not (clojure.set/subset? (set (keys config-options))
                                  valid-session-config-options)
@@ -614,7 +617,8 @@
                  " are recognized keywords.")))))
 
 (defn configure-session
-  ;; TODO docstring
+  "Configures the given MarkLogic `session` according to the given
+  `config-options`. See `create-session`."
   [session {:keys [default-request-options logger user-object
                    transaction-mode transaction-timeout]
             :as config-options}]
@@ -672,7 +676,13 @@
    (configure-session (create-session* db-info content-source) config-options)))
 
 (defn create-default-session
-  ;; TODO docstring
+  "Returns a session according to the default login credentials of the
+  given `content-source`, which must be a
+  com.marklogic.xcc.ContentSource object (see
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentSource.html),
+  presumably created with one of Uruk's `make-*-content-source`
+  functions. Optionally takes a map of `config-options` to configure
+  the session."
   ([content-source]
    (create-default-session content-source nil))
   ([content-source {:keys [default-request-options logger user-object
