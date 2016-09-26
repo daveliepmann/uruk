@@ -583,7 +583,7 @@
   [{:keys [uri user password content-base]} & [content-source]]
   (let [cs (if (instance? ContentSource content-source)
              content-source
-             (make-uri-content-source (URI. uri)))]
+             (make-uri-content-source uri))]
     (cond
       (and (nil? content-base)
            (or (nil? user)
