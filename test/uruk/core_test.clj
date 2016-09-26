@@ -296,6 +296,37 @@
                                  {:transaction-timeout 234 :derp "invalid!"})))))
 
 
+(deftest default-sessions-created-as-expected
+  (testing "We should be able to create default sessions from all kinds of content sources."
+    (testing "...URI content sources"
+      (is (instance? com.marklogic.xcc.impl.SessionImpl
+                     (create-default-session (make-uri-content-source (:uri db)))))
+      (is (= "default session logger" (-> (make-uri-content-source (:uri db)
+                                                                   {:default-logger (Logger/getLogger "default session logger")})
+                                          create-default-session
+                                          .getLogger
+                                          .getName)))
+      (is (= "non-default session logger" (-> (make-uri-content-source (:uri db)
+                                                                       {:default-logger (Logger/getLogger "default session test")})
+                                              (create-default-session {:logger (Logger/getLogger "non-default session logger")})
+                                              .getLogger
+                                              .getName))))
+    (testing "...hosted content sources"
+      (is (instance? com.marklogic.xcc.impl.SessionImpl
+                     (create-default-session (make-hosted-content-source "localhost" 8383
+                                                                         {:content-base "TutorialDB"}))))
+      (is (= "default session logger" (-> (make-hosted-content-source "localhost" 8383
+                                                                      {:default-logger (Logger/getLogger "default session logger")})
+                                          create-default-session
+                                          .getLogger
+                                          .getName)))
+      (is (= "non-default session logger" (-> (make-hosted-content-source "localhost" 8383
+                                                                          {:default-logger (Logger/getLogger "default session test")})
+                                              (create-default-session {:logger (Logger/getLogger "non-default session logger")})
+                                              .getLogger
+                                              .getName))))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Content creation options
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
