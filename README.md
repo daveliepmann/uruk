@@ -177,9 +177,20 @@ Values are converted according to the `:clj->xdm` key in `xcc-types`. If you nee
 ```
 The variables map syntax also accepts a `:namespace` key.
 
+### Content Sources and Session Creation
+In addition to the basic `create-session` function that we've been
+using thus far, Uruk also supports session creation through all the
+various
+[ContentSourceFactory](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentSourceFactory.html) methods
+in MarkLogic. Functions `make-uri-content-source`,
+`make-hosted-content-source`, and `make-cp-content-source` are used to
+create ContentSource objects that can be manipulated for more complex
+session-management processes in your application. Note also that
+`create-default-session` lets you create sessions by directly invoking
+the default login credentials of your content sources.
+
 
 ### Transactions
-
 Multiple database updates that must occur together can take advantage of transactions. To borrow an example from the XCC Developer’s Guide:
 
 >The following example demonstrates using multi-statement transactions in Java. The first multi-statement transaction in the session inserts two documents into the database, calling Session.commit to complete the transaction and commit the updates. The second transaction demonstrates the use of Session.rollback. The third transaction demonstrates implicitly rolling back updates by closing the session.

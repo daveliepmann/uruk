@@ -520,14 +520,15 @@
   string for `uri`."
   ([uri] (make-uri-content-source uri nil))
   ([uri {:keys [security-options default-logger preemptive-auth]}]
-   (configure-content-source (if (instance? SecurityOptions security-options)
-                               (ContentSourceFactory/newContentSource (if (instance? URI uri)
-                                                                        uri (URI. uri))
-                                                                      security-options)
-                               (ContentSourceFactory/newContentSource (if (instance? URI uri)
-                                                                        uri (URI. uri))))
-                             {:default-logger default-logger
-                              :preemptive-auth preemptive-auth})))
+   (configure-content-source
+    (if (instance? SecurityOptions security-options)
+      (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                               uri (URI. uri))
+                                             security-options)
+      (ContentSourceFactory/newContentSource (if (instance? URI uri)
+                                               uri (URI. uri))))
+    {:default-logger default-logger
+     :preemptive-auth preemptive-auth})))
 
 (defn make-hosted-content-source
   "Return a ContentSource object according to the given `host` String
