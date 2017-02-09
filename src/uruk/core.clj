@@ -2,6 +2,7 @@
   "Marklogic XCC core functions: session management, querying, type
   conversion, transactions."
   (:require clojure.set
+            clojure.edn
             [clojure.data.json :as json]
             [clojure.data.xml :as xml]
             [slingshot.slingshot :as sling])
