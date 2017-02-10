@@ -1,19 +1,31 @@
 # uruk
 [<img align="right" src="gilgamesh-tablet.jpg"/>](https://en.wikipedia.org/wiki/File:Tablet_V_of_the_Epic_of_Gligamesh.JPG)
-Uruk is a Clojure library wrapping MarkLogic's XML Content Connector for Java (XCC/J). Uruk empowers you to access your Enterprise NoSQL database from Clojure.
+Uruk is a Clojure library wrapping [MarkLogic](http://www.marklogic.com/what-is-marklogic/)'s [XML Content Connector for Java (XCC/J)](https://developer.marklogic.com/products/xcc). Uruk empowers you to access your Enterprise NoSQL database from Clojure.
+
+By leveraging MarkLogic's XCC API, you can use Uruk to:
+
+ - evaluate stored XQuery programs
+ - dynamically construct and evaluate XQuery programs
+ - manage documents and stream inserts
 
 The name Uruk comes from the [ancient Mesopotamian city-state](http://www.metmuseum.org/toah/hd/uruk/hd_uruk.htm) and [period](http://www.metmuseum.org/toah/hd/wrtg/hd_wrtg.htm) in which some of the oldest known writing has been found. One can see Uruk as perhaps the first document database—and it certainly wasn’t organized relationally.
 
-This project is sponsored by [LambdaWerk](https://lambdawerk.com/home).
+This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is part of the emacs [XQuery-mode](https://github.com/xquery-mode/) stack.
 
 ## Installation
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
-In your *project.clj* dependencies: `[uruk "0.3.3"]`
+In your *project.clj* dependencies: `[uruk "0.3.4"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
 ## Usage
+
+### Resources
+
+See the [MarkLogic XCC Javadoc](https://docs.marklogic.com/javadoc/xcc/index.html) to understand what Uruk is talking to.
+
+For examples of how to use specific types and functions, see `test/uruk/core_test.clj`. Examples in this README are included for reference in `src/uruk/examples/readme.clj`.
 
 ### MarkLogic installation
 
@@ -21,17 +33,17 @@ To play around with Uruk locally and to run the tests, you'll need to install an
 
 * Install and start a local MarkLogic server via the [Install Instructions](https://docs.marklogic.com/guide/installation/procedures#id_28962).
 
-* Navigate to http://localhost:8000/appservices/ and follow the [Setup Instructions](https://developer.marklogic.com/learn/java/setup#create-a-database) to (a) create a TutorialDB database, (b) create a REST API instance (**use port 8383**), and (c) create some initial REST users. 
+* Navigate to http://localhost:8000/appservices/ and follow the [Setup Instructions](https://developer.marklogic.com/learn/java/setup#create-a-database) to (a) create a TutorialDB database, (b) create a REST API instance (**use port 8383**), and (c) create some initial REST users.
 
-| Username | Password | Details | Purpose | 
+| Username | Password | Details | Purpose |
 | --- | --- | --- | --- |
 | 'test-admin' | 'uruktesting' | roles of **'rest-admin'** and **'rest-writer'**, <br/>default read/write/execute permissions for 'rest-writer' on all items created | Necessary to run tests |
-| 'rest-admin' | 'x' | roles of **'xa'** and **'rest-admin'** | Necessary to run the examples in this readme | 
+| 'rest-admin' | 'x' | roles of **'xa'** and **'rest-admin'** | Necessary to run the examples in this readme |
 
 * Finally, you must add the environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) in your Bash profile (*.bashrc*).
 
 ### Examples of using Uruk
-For ease of replication, the examples below are also in `/src/uruk/examples/readme.clj`.
+For ease of replication, the examples below are also in `src/uruk/examples/readme.clj`.
 
 Basic usage takes the form of:
 ``` clojure
@@ -147,7 +159,7 @@ If you need a non-XS_STRING variable, then use the more nuanced map-of-variables
                                                    :type :xs-integer}}
                         :shape :single!}))
 ```
-The value for `type` should be a keyword corresponding to a key in `variable-types`, e.g. `:document` for XML documents (`ValueType/DOCUMENT`). It defaults to `XS_STRING` if `:type` is not specified. For example, the first simple variables map example above could also be described as `{"my-variable" {:value "my-value"}}`. 
+The value for `type` should be a keyword corresponding to a key in `variable-types`, e.g. `:document` for XML documents (`ValueType/DOCUMENT`). It defaults to `XS_STRING` if `:type` is not specified. For example, the first simple variables map example above could also be described as `{"my-variable" {:value "my-value"}}`.
 
 Depending on the XdmValue type, conversion of expected Clojure values is automatic, for instance with this [*booleanNode*](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/types/BooleanNode.html):
 ``` clojure
@@ -203,11 +215,11 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
 (with-open [session (uruk/create-session db {:transaction-mode :update})]
   ;; The first request (query) starts a new, multi-statement transaction:
   (uruk/execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
-  
+
   ;; This second request executes in the same transaction as the
   ;; previous request and sees the results of the previous update:
   (uruk/execute-xquery session "xdmp:document-insert('/docs/mst2.xml', fn:doc(\"/docs/mst1.xml\"));")
-  
+
   ;; After commit, updates are visible to other transactions. Commit
   ;; ends the transaction after current statement completes.
   (uruk/commit session) ;; <—- Transaction ends; updates are kept
@@ -217,7 +229,7 @@ We translate the original Java to Clojure, taking advantage of Clojure’s `with
   ;; before calling commit:
   (uruk/execute-xquery session "xdmp:document-delete('/docs/mst1.xml')")
   (uruk/rollback session) ;; <– Transaction ends; updates are lost
-  
+
   ;; Closing session without calling commit causes a rollback. The
   ;; following update is lost, since we don't commit before the end of
   ;; the (with-open) and its implicit `.close`:
