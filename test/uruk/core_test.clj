@@ -1253,8 +1253,8 @@
         (is (= "xs:time"
                (result->type (execute-xquery session "fn:adjust-time-to-timezone(xs:time(\"10:00:00\"))"
                                              {:types :raw}))))
-        (is (= "10:00:00+02:00"
-               (execute-xquery session "fn:adjust-time-to-timezone(xs:time(\"10:00:00\"))"
+        (is (= "10:00:00-01:00"
+               (execute-xquery session "fn:adjust-time-to-timezone(xs:time(\"10:00:00\"), xs:dayTimeDuration(\"-PT1H\"))"
                                {:shape :single!})))))
 
     (testing ".........XSUntypedAtomic"
