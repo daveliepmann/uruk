@@ -15,6 +15,8 @@
 ;;;; Request options
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(println "Testing with MarkLogic XCC version" (:string version))
+
 (deftest default-request-options
   (testing "Creating a request with no explicitly-set options must reflect default options"
     (is (= (request-options->map (make-request-options {}))
