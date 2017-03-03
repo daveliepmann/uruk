@@ -15,7 +15,7 @@ This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is pa
 ## Installation
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
-In your *project.clj* dependencies: `[uruk "0.3.4"]`
+In your *project.clj* dependencies: `[uruk "0.3.5"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
