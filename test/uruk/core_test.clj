@@ -995,7 +995,7 @@
                                              {:types :raw})))))
 
       (with-open [session (create-session db)]
-        (is (= "@20 37.655983,-122.42552"
+        (is (= "@20 37.655983,-122.42553"
                (execute-xquery session "cts:circle(20, cts:point(37.655983, -122.425525))"
                                {:shape :single!})))))
 
@@ -1006,7 +1006,7 @@
                                              {:types :raw})))))
 
       (with-open [session (create-session db)]
-        (is (= "37.655983,-122.42552"
+        (is (= "37.655983,-122.42553"
                (execute-xquery session "cts:point(37.655983, -122.425525)"
                                {:shape :single!})))))
 
