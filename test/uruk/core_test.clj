@@ -663,14 +663,14 @@
                                                                            :type :object-node}}})))))))))
 
 ;; ;; TODO test all (minus unknown/as-yet-unused) variable types can be sent correctly:
-;; :binary :attribute :variable :duration :node :processing-instruction 
+;; :binary :attribute :variable :duration :node :processing-instruction
 ;; :xs-date :xs-hex-binary :xs-gday :xs-day-time-duration :xs-date-time :xs-gyear :xs-duration :xs-base64-binary :xs-gmonth :xs-gmonth-day :xs-integer :comment :xs-gyear-month :xs-untyped-atomic :xs-time :xs-year-month-duration
 
 ;; XXX done:
 ;; :document
 ;;:null-node
 ;; :boolean-node
-;; :xs-qname 
+;; :xs-qname
 ;; :xs-boolean
 ;; :xs-decimal :xs-double  :xs-float
 ;; :xs-any-uri
@@ -679,7 +679,7 @@
 ;; :array-node
 ;; :sequence
 ;; :number-node
-;;  :xs-string 
+;;  :xs-string
 ;; :js-object
 ;; :js-array
 ;; :object-node
@@ -1038,8 +1038,8 @@
                                                     return
                                                     cts:polygon($points)"
                  {:types :raw})))))
-      
-      
+
+
       (with-open [session (create-session db)]
         (is (= "37.389965,-122.07858 37.37654,-122.06377 37.37814,-122.06797 37.382565,-122.06837 37.37974,-122.07217 37.38994,-122.09257 37.39414,-122.09557 37.39664,-122.09417 37.39584,-122.09237 37.40044,-122.09127 37.40044,-122.09127 37.38734,-122.05787 37.38734,-122.05787 37.38544,-122.05267 37.38334,-122.05337 37.38194,-122.05757 37.37754,-122.06087 37.37654,-122.06377 37.389965,-122.07858"
                (execute-xquery session "(: this polygon approximates the 94041 zip code :)
@@ -1110,7 +1110,7 @@
         (is (= "xs:boolean"
                (result->type (execute-xquery session "fn:doc-available(\"derp\")"
                                              {:types :raw}))))
-        (is (false? (execute-xquery session "fn:doc-available(\"derp\")" {:shape :single!}))) 
+        (is (false? (execute-xquery session "fn:doc-available(\"derp\")" {:shape :single!})))
         (is (= "xs:boolean"
                (result->type (execute-xquery session "fn:true()"
                                              {:types :raw}))))
@@ -1138,7 +1138,7 @@
     (testing "......XSDayTimeDuration"
       (with-open [session (create-session db)]
         (is (= "xs:dayTimeDuration"
-               (result->type (execute-xquery session "xquery version \"0.9-ml\" 
+               (result->type (execute-xquery session "xquery version \"0.9-ml\"
                                                       fn:subtract-dateTimes-yielding-dayTimeDuration(fn:adjust-dateTime-to-timezone(xs:dateTime(\"2002-03-07T10:00:00\"), ()), xs:dateTime(\"2000-01-11T12:01:00.000Z\"))" ;; this fn removed in version 1.0; only used to get correct response type
                                              {:types :raw}))))
         (is (= "P785DT20H59M"
@@ -1147,7 +1147,7 @@
                                                                                                                       ()),
                                                                                        xs:dateTime(\"2000-01-11T12:01:00.000Z\"))"
                                {:shape :single!})))))
-    
+
     (testing "......XSDecimal"
       (with-open [session (create-session db)]
         (is (= "xs:decimal" (result->type (execute-xquery session "fn:abs(-1.2)"
@@ -1235,7 +1235,7 @@
 
     (testing ".........XSQName"
       (with-open [session (create-session db)]
-        (is (= "xs:QName" 
+        (is (= "xs:QName"
                (result->type (execute-xquery session "fn:QName(\"http://www.example.com/example\", \"person\")"
                                              {:types :raw}))))
         (is (= "person"
