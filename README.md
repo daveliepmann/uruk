@@ -259,15 +259,22 @@ See `uruk.core/valid-content-creation-options`, which is a Clojurey version of t
 
 
 <p align="center"><a href="https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"><img src="warka-dictionary.jpg"/></a></p>
+
+## Uncovered surface area
+Uruk is fully functional and production-ready. However, some aspects of the XCC/J API have not yet been implemented:
+
+  - [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html)
+  - [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) -- note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
+  - [ResultChannelName](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ResultChannelName.html)
+
+
 ## TODO
-  - use clojure.spec once Clojure 1.9 is stable
+
+  - look into possibly using clojure.spec (once Clojure 1.9 is stable)
   - ensure insert-element robustly covers needed use cases
-  - evaluate need for `with-session` macro?
-  - implement REx to automatically parse XQuery for XDM variable types?
-  - future: [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html) support
-  - future: [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) support; note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
-  - [ResultChannelName](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ResultChannelName.html)?
-  - implement `use-fixtures` within tests to create user with appropriate permissions?
+  - possibly implement REx to automatically parse XQuery for XDM variable types
+  - possibly implement `use-fixtures` within tests to create user with appropriate permissions
+
 
 ## License
 
