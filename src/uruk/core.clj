@@ -31,10 +31,9 @@
    :version-patch (Version/getVersionPatch)})
 
 (def ->doc-format
-  "Mapping of keywords to allowed document formats. Used at insertion
-  time.
+  "Mapping of keywords to allowed document formats. Used at insertion time.
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/DocumentFormat.html"
-  {:xml DocumentFormat/XML
+  {:xml    DocumentFormat/XML
    :json   DocumentFormat/JSON
    :text   DocumentFormat/TEXT
    :none   DocumentFormat/NONE
@@ -58,9 +57,9 @@
 (def ->transaction-mode
   "Mapping of keywords to valid Session transaction modes. See
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.TransactionMode.html"
-  {:auto Session$TransactionMode/AUTO
-   :query Session$TransactionMode/QUERY
-   :update Session$TransactionMode/UPDATE
+  {:auto               Session$TransactionMode/AUTO
+   :query              Session$TransactionMode/QUERY
+   :update             Session$TransactionMode/UPDATE
    :update-auto-commit Session$TransactionMode/UPDATE_AUTO_COMMIT})
 
 
@@ -80,8 +79,7 @@
       (clojure.edn/read-string s))))
 
 (defn java-json->clj-json
-  "Given a MarkLogic XCC JSON object, returns a Clojure representation
-  of its JSON data."
+  "Given a MarkLogic XCC JSON object, returns a Clojure representation of its JSON data."
   [java-json]
   (json/read-str (.toString (.asJsonNode java-json))))
 
@@ -126,7 +124,7 @@
 
   `:xcc-type` maps to the corresponding
   com.marklogic.xcc.types.ValueType field"
-  {:attribute {;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type 
+  {:attribute {;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type
                :ml->clj #(.asString %)
                :clj->xdm identity ;; doesn't seem to be implemented by ValueFactory: "java.lang.InternalError Unrecognized valueType: attribute()"
                :xml-name "attribute()"
@@ -472,7 +470,7 @@
    :request-time-limit (.getRequestTimeLimit req-opts)
    :result-buffer-size (.getResultBufferSize req-opts)
    :timeout-millis (.getTimeoutMillis req-opts)
-   :timezone (.getTimeZone req-opts)}) 
+   :timezone (.getTimeZone req-opts)})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -738,7 +736,7 @@
    :current-server-time (.getCurrentServerPointInTime session)
    :content-source (.getContentSource session)
    :xaresource (.getXAResource session)
-   :user-object (.getUserObject session) 
+   :user-object (.getUserObject session)
    :user-credentials (user-credentials->map (.getUserCredentials session))
    :closed? (.isClosed session) ;; TODO maybe create (defn closed? [session] ...) ? Except it wouldn't be specific to Session in this ns, and ResultSequence also has isClosed, so it's ambiguous.
    :cached-transaction-timeout (.getCachedTxnTimeout session)
@@ -910,7 +908,7 @@
   Variables may be passed as a map of Strings or with String names
   corresponding to maps describing the variable using mandatory key
   `:value` and optional keys `:namespace` and `:type`.`
-  
+
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ModuleSpawn.html"
   ([session module]
    (spawn-module session module {}))
