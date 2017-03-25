@@ -14,5 +14,4 @@
   :checksum :warn
   ;; TODO remove this workaround -- MarkLogic's Maven repo doesn't have checksums?
   :repositories [["MarkLogic-releases" "http://developer.marklogic.com/maven2"]
-                 ["local" "file:jar"]]
-  :plugins [[lein-localrepo "0.5.3"]])
+                 ["local" "file:jar"]])
