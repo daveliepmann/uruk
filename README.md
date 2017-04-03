@@ -12,12 +12,16 @@ The name Uruk comes from the [ancient Mesopotamian city-state](http://www.metmus
 
 This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is part of the emacs [XQuery-mode](https://github.com/xquery-mode/) stack.
 
+
 ## Installation
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
 In your *project.clj* dependencies: `[uruk "0.3.5"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
+
+This branch handles MarkLogic 9 Early Access 4. To run, you'll need to create a *jar/* directory in this project directory, and put `marklogic-xcc-9.0.20170113.jar` in it. MarkLogic will then be found by the `["local" "file:jar"]` entry in *project.clj* `:repositories`.
+
 
 ## Usage
 
@@ -259,6 +263,7 @@ See `uruk.core/valid-content-creation-options`, which is a Clojurey version of t
 
 
 <p align="center"><a href="https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"><img src="warka-dictionary.jpg"/></a></p>
+
 
 ## Uncovered surface area
 Uruk is fully functional and production-ready. However, some aspects of the XCC/J API have not yet been implemented:
