@@ -126,7 +126,7 @@
 
   `:xcc-type` maps to the corresponding
   com.marklogic.xcc.types.ValueType field"
-  {:attribute {;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type 
+  {:attribute {;; FIXME Causes "Unhandled java.lang.InternalError | Unrecognized valueType: attribute()" if passed as variable :type
                :ml->clj #(.asString %)
                :clj->xdm identity ;; doesn't seem to be implemented by ValueFactory: "java.lang.InternalError Unrecognized valueType: attribute()"
                :xml-name "attribute()"
@@ -403,9 +403,9 @@
   [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
   (map (fn [item] (((merge xml-type-str->conv-fn
-                          (when (map? type-mapping)
-                            type-mapping))
-                   (.toString (.getValueType item))) item))
+                           (when (map? type-mapping)
+                             type-mapping))
+                    (.toString (.getValueType item))) item))
        (.toArray result-sequence)))
 
 
@@ -472,7 +472,7 @@
    :request-time-limit (.getRequestTimeLimit req-opts)
    :result-buffer-size (.getResultBufferSize req-opts)
    :timeout-millis (.getTimeoutMillis req-opts)
-   :timezone (.getTimeZone req-opts)}) 
+   :timezone (.getTimeZone req-opts)})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -738,7 +738,7 @@
    :current-server-time (.getCurrentServerPointInTime session)
    :content-source (.getContentSource session)
    :xaresource (.getXAResource session)
-   :user-object (.getUserObject session) 
+   :user-object (.getUserObject session)
    :user-credentials (user-credentials->map (.getUserCredentials session))
    :closed? (.isClosed session) ;; TODO maybe create (defn closed? [session] ...) ? Except it wouldn't be specific to Session in this ns, and ResultSequence also has isClosed, so it's ambiguous.
    :cached-transaction-timeout (.getCachedTxnTimeout session)
@@ -910,7 +910,7 @@
   Variables may be passed as a map of Strings or with String names
   corresponding to maps describing the variable using mandatory key
   `:value` and optional keys `:namespace` and `:type`.`
-  
+
   See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ModuleSpawn.html"
   ([session module]
    (spawn-module session module {}))
