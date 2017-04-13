@@ -1051,11 +1051,22 @@
           (= (first s) \-) ;; if number is negative
           (number? (first s))))))
 
+(defn- is-xml-string?
+  "Returns true if `s` is a String containing valid XML; else false"
+  [s]
+  (if-not (string? s)
+    false
+    (try (if (xml/parse-str s) true false)
+         (catch javax.xml.stream.XMLStreamException xmlse
+           false)
+         (catch Exception e
+           false))))
+
 (defn ->string-format
   "Returns a document format keyword describing given String."
   [s]
   (assert (string? s) "Parameter `s` must be a String")
-  (cond (= (first s) \<)    :xml
+  (cond (is-xml-string?  s) :xml
         (is-json-string? s) :json
         :else               :text))
 
