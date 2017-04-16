@@ -257,11 +257,22 @@ This function takes an optional map describing document metadata, including Cont
 ```
 See `uruk.core/valid-content-creation-options`, which is a Clojurey version of the possibilities described by [ContentCreateOptions](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html).
 
+### Inserting Text
+
+You can also directly insert text as content, in any of MarkLogic's supported forms (text, binary, JSON, XML):
+
+``` clojure
+(with-open [session (uruk/create-session db)]
+  (uruk/insert-string session
+                      "/content-factory/new-text-doc" ;; uri to insert at
+                      "<abc>def</abc>"))
+```
+The `insert-string` function used here automatically detects string type and inserts the correct type of content. For instance, in this example, the string will be automatically inserted as XML, since `clojure.data.xml/parse-str` successfully parses it as XML. This function takes options just like `insert-element`.
+
 
 <p align="center"><a href="https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"><img src="warka-dictionary.jpg"/></a></p>
 ## TODO
   - use clojure.spec once Clojure 1.9 is stable
-  - ensure insert-element robustly covers needed use cases
   - evaluate need for `with-session` macro?
   - implement REx to automatically parse XQuery for XDM variable types?
   - future: [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html) support
