@@ -401,9 +401,9 @@
   [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
   (map (fn [item] (((merge xml-type-str->conv-fn
-                           (when (map? type-mapping)
-                             type-mapping))
-                    (.toString (.getValueType item))) item))
+                          (when (map? type-mapping)
+                            type-mapping))
+                   (.toString (.getValueType item))) item))
        (.toArray result-sequence)))
 
 
