@@ -16,7 +16,7 @@ This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is pa
 ## Installation
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
-In your *project.clj* dependencies: `[uruk "0.3.5"]`
+In your *project.clj* dependencies: `[uruk "0.3.7"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
@@ -261,6 +261,18 @@ This function takes an optional map describing document metadata, including Cont
 ```
 See `uruk.core/valid-content-creation-options`, which is a Clojurey version of the possibilities described by [ContentCreateOptions](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentCreateOptions.html).
 
+### Inserting Text
+
+You can also directly insert text as content, in any of MarkLogic's supported forms (text, binary, JSON, XML):
+
+``` clojure
+(with-open [session (uruk/create-session db)]
+  (uruk/insert-string session
+                      "/content-factory/new-text-doc" ;; uri to insert at
+                      "<abc>def</abc>"))
+```
+The `insert-string` function used here automatically detects string type and inserts the correct type of content. For instance, in this example, the string will be automatically inserted as XML, since `clojure.data.xml/parse-str` successfully parses it as XML. This function takes options just like `insert-element`.
+
 
 <p align="center"><a href="https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"><img src="warka-dictionary.jpg"/></a></p>
 
@@ -274,12 +286,13 @@ Uruk is fully functional and production-ready. However, some aspects of the XCC/
 
 
 ## TODO
-
   - look into possibly using clojure.spec (once Clojure 1.9 is stable)
   - ensure insert-element robustly covers needed use cases
   - possibly implement REx to automatically parse XQuery for XDM variable types
   - possibly implement `use-fixtures` within tests to create user with appropriate permissions
-
+  - future: [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html) support
+  - future: [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) support; note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
+  - [ResultChannelName](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ResultChannelName.html)?
 
 ## License
 

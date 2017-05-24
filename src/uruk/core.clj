@@ -401,9 +401,9 @@
   [result-sequence & [type-mapping]]
   ;; TODO throw informative exception if type not found in types
   (map (fn [item] (((merge xml-type-str->conv-fn
-                          (when (map? type-mapping)
-                            type-mapping))
-                   (.toString (.getValueType item))) item))
+                           (when (map? type-mapping)
+                             type-mapping))
+                    (.toString (.getValueType item))) item))
        (.toArray result-sequence)))
 
 
@@ -1033,6 +1033,68 @@
 
 ;; TODO? https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContent(com.marklogic.xcc.Content[])
 ;; TODO? https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContentCollectErrors(com.marklogic.xcc.Content[])
+
+(defn- is-json-string?
+  "Returns true if given a valid JSON string; else false"
+  [s]
+  (if-not (string? s)
+    false
+    (let [s (.trim s)]
+      (or (= s "true")
+          (= s "false")
+          (= s "null")
+          (= (first s) \[)
+          (= (first s) \{)
+          (= (first s) \")
+          (= (first s) \-) ;; if number is negative
+          (number? (first s))))))
+
+(defn- is-xml-string?
+  "Returns true if `s` is a String containing valid XML; else false"
+  [s]
+  (if-not (string? s)
+    false
+    (try (if (xml/parse-str s) true false)
+         (catch javax.xml.stream.XMLStreamException xmlse
+           false)
+         (catch Exception e
+           false))))
+
+(defn ->string-format
+  "Returns a document format keyword describing given String."
+  [s]
+  (assert (string? s) "Parameter `s` must be a String")
+  (cond (is-xml-string?  s) :xml
+        (is-json-string? s) :json
+        :else               :text))
+
+(defn string->content
+  "Given a String, returns a MarkLogic XCC Content object suitable for
+  inserting to a database. Optionally takes a map of content creation
+  options per `content-creation-options`. Determines content format
+  using `->string-format`.
+
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Content.html
+  and https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ContentFactory.html"
+  ([uri s]
+   (string->content uri s {}))
+  ([uri s options]
+   (ContentFactory/newContent uri s
+                              (content-creation-options (merge {:format (->string-format s)}
+                                                               options)))))
+
+(defn insert-string
+  "Inserts the given String `s` at the given `uri` to the
+  database/content-base according determined by the current
+  `session`. Optionally takes a map of content creation options per
+  `content-creation-options`.
+
+  See https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.html#insertContent(com.marklogic.xcc.Content)"
+  ([session uri s]
+   (.insertContent session (string->content uri s)))
+  ([session uri s options]
+   (.insertContent session (string->content uri s options))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Transactions

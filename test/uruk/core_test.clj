@@ -781,6 +781,50 @@
                        xdmp:document-delete('/content-factory/new-doc');"
                       {:shape :single}))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; String insertion
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest string-insertion
+  (testing "Strings must be insertable as documents"
+    ;; Insert a document
+    (with-open [session (create-session db)]
+      (insert-string session
+                     "/content-factory/new-json-doc"
+                     "{\"a\": \"b\"}"))
+    ;; Did that insert work?
+    (is (= {"a" "b"}
+           (with-open [session (create-session db)]
+             (execute-xquery session
+                             "xquery version \"1.0-ml\"; fn:doc('/content-factory/new-json-doc');"
+                             {:shape :single}))))
+    ;; Clean up inserted document so we don't affect the next test run
+    (with-open [session (create-session db)]
+      (execute-xquery session
+                      "xquery version \"1.0-ml\"; xdmp:document-delete('/content-factory/new-json-doc');"
+                      {:shape :single})))
+
+  (testing "Insert-string must accept content creation options"
+    ;; Insert a document with various options
+    (with-open [session (create-session db)]
+      (insert-string session
+                     "/content-factory/new-json-doc"
+                     "{\"a\": \"b\"}"
+                     {:quality 2})) ;; TODO test other options too?
+    ;; Did our options get included in that doc?
+    (is (= 2
+           (with-open [session (create-session db)]
+             (execute-xquery session
+                             "xquery version \"1.0-ml\";
+                              xdmp:document-get-quality('/content-factory/new-json-doc');"
+                             {:shape :single}))))
+    ;; Clean up inserted document so we don't affect the next test run
+    (with-open [session (create-session db)]
+      (execute-xquery session
+                      "xquery version \"1.0-ml\";
+                       xdmp:document-delete('/content-factory/new-json-doc');"
+                      {:shape :single}))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; TODO security options
