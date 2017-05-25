@@ -20,8 +20,6 @@ In your *project.clj* dependencies: `[uruk "0.3.7"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
-This branch handles MarkLogic 9 Early Access 4. To run, you'll need to create a *jar/* directory in this project directory, and put `marklogic-xcc-9.0.20170113.jar` in it. MarkLogic will then be found by the `["local" "file:jar"]` entry in *project.clj* `:repositories`.
-
 
 ## Usage
 
