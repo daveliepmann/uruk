@@ -1,5 +1,5 @@
 # uruk
-[<img align="right" src="gilgamesh-tablet.jpg"/>](https://en.wikipedia.org/wiki/File:Tablet_V_of_the_Epic_of_Gligamesh.JPG)
+[<img align="right" src="resources/gilgamesh-tablet.jpg"/>](https://en.wikipedia.org/wiki/File:Tablet_V_of_the_Epic_of_Gligamesh.JPG)
 Uruk is a Clojure library wrapping [MarkLogic](http://www.marklogic.com/what-is-marklogic/)'s [XML Content Connector for Java (XCC/J)](https://developer.marklogic.com/products/xcc). Uruk empowers you to access your Enterprise NoSQL database from Clojure.
 
 By leveraging MarkLogic's XCC API, you can use Uruk to:
@@ -43,7 +43,7 @@ To play around with Uruk locally and to run the tests, you'll need to install an
 
 5. Create `uruk-tester` user with password "password" and roles of `xa` and `uruk-tester-role`. This will be necessary to run tests and README examples.
 
-6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) to your Bash profile (*.bashrc*).
+6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/resources/ml-favicon.ico`) to your Bash profile (*.bashrc*).
 
 You should now be able to run `lein test` and, if you start up a REPL, the examples in *test/uruk/core_test.clj*.
 
@@ -275,7 +275,7 @@ You can also directly insert text as content, in any of MarkLogic's supported fo
 The `insert-string` function used here automatically detects string type and inserts the correct type of content. For instance, in this example, the string will be automatically inserted as XML, since `clojure.data.xml/parse-str` successfully parses it as XML. This function takes options just like `insert-element`.
 
 
-<p align="center"><a href="https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"><img src="warka-dictionary.jpg"/></a></p>
+<p align="center"><a href="https://commons.wikimedia.org/wiki/File:Dictionary_-_Louvre,_Near_Eastern_Antiquities_in_the_Louvre,_Room_3,_Case_15_-_AO_7661.jpg"><img src="resources/warka-dictionary.jpg"/></a></p>
 
 
 ## Uncovered surface area
