@@ -45,6 +45,8 @@ To play around with Uruk locally and to run the tests, you'll need to install an
 
 6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) to your Bash profile (*.bashrc*).
 
+You should now be able to run `lein test` and, if you start up a REPL, the examples in *test/uruk/core_test.clj*.
+
 ### Examples of using Uruk
 For ease of replication, the examples below are also in `src/uruk/examples/readme.clj`.
 
