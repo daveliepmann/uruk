@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [com.marklogic/marklogic-xcc "9.0.20170113"]
+                 [com.marklogic/marklogic-xcc "9.0.1"]
                  ;; required but not included by MarkLogic (e.g. for ContentFactory):
                  [com.fasterxml.jackson.core/jackson-databind "2.6.3"]
                  [org.clojure/data.json "0.2.6"]
