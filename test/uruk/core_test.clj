@@ -8,8 +8,8 @@
 ;; FIXME You'll have to fill in database credentials that work for
 ;; your system:
 (def db {:uri "xdbc://localhost:8383/"
-         :user "test-admin" :password "uruktesting"
-         :content-base "TutorialDB"})
+         :user "uruk-tester" :password "password"
+         :content-base "UrukDB"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Request options
@@ -43,13 +43,13 @@
     (testing "...with URI and content-base"
       (is (thrown? IllegalStateException
                    (with-open [session (create-session {:uri "xdbc://localhost:8383/"
-                                                        :content-base "TutorialDB"})]
+                                                        :content-base "UrukDB"})]
                      (.submitRequest session (.newAdhocQuery session "\"Hello world\""))))))
 
     (testing "...with URI, user, password"
       (is (= "Hello world"
              (with-open [session (create-session {:uri "xdbc://localhost:8383/"
-                                                  :user "test-admin" :password "uruktesting"})]
+                                                  :user "uruk-tester" :password "password"})]
                (-> session
                    (.submitRequest (.newAdhocQuery session
                                                    "\"Hello world\""))
@@ -141,7 +141,7 @@
     (testing "session creation with hosted content source using options"
       (with-open [sess (create-session
                         db (make-hosted-content-source "localhost" 8383
-                                                       {:content-base "TutorialDB"})
+                                                       {:content-base "UrukDB"})
                         {})]
         (is-default-session-config? (session->map sess))))
     ;; TODO once we want to delve into extreme complexity of ConnectionProvider
@@ -222,7 +222,7 @@
           opts {:default-request-options {:auto-retry-delay-millis 98
                                           :cache-result false
                                           :default-xquery-version "0.9-ml"
-                                          ;; XXX requires `xdmp:timestamp` privilege:
+                                          ;; XXX requires `xdmp:timestamp` execute privilege on the role for the current user
                                           :effective-point-in-time (.getCurrentServerPointInTime
                                                                     dummy-session)
                                           :locale (Locale. "ru")
@@ -260,22 +260,22 @@
       (testing "with hosted content source using content base"
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
-                                                         {:content-base "TutorialDB"})
+                                                         {:content-base "UrukDB"})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
       (testing "with hosted content source using user, password, content-base"
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
-                                                         {:user "test-admin"
-                                                          :password "uruktesting"
-                                                          :content-base "TutorialDB"})
+                                                         {:user "uruk-tester"
+                                                          :password "password"
+                                                          :content-base "UrukDB"})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
       (testing "with hosted content source using user and password"
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
-                                                         {:user "test-admin"
-                                                          :password "uruktesting"})
+                                                         {:user "uruk-tester"
+                                                          :password "password"})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
       ;; TODO once we want to delve into extreme complexity of ConnectionProvider
@@ -316,7 +316,7 @@
     (testing "...hosted content sources"
       (is (instance? com.marklogic.xcc.impl.SessionImpl
                      (create-default-session (make-hosted-content-source "localhost" 8383
-                                                                         {:content-base "TutorialDB"}))))
+                                                                         {:content-base "UrukDB"}))))
       (is (= "default session logger" (-> (make-hosted-content-source "localhost" 8383
                                                                       {:default-logger (Logger/getLogger "default session logger")})
                                           create-default-session
@@ -838,8 +838,8 @@
 
 ;; (comment
 ;;   (session->map (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "test-admin" :password "uruktesting"
-;;                                     :content-base "TutorialDB"}
+;;                                     :user "uruk-tester" :password "password"
+;;                                     :content-base "UrukDB"}
 ;;                                    {} (uri-content-source "xdbc://localhost:8383/"
 ;;                                                           (security-options TODO)))))
 
@@ -869,7 +869,7 @@
 (deftest content-source-creation-with-host-port-user-pwd
   (testing "content source creation from host and port"
     (let [cs (make-hosted-content-source "localhost" 8383
-                                         {:user "test-admin" :password "uruktesting"})]
+                                         {:user "uruk-tester" :password "password"})]
       (and (instance? ContentSource cs)
            (= 8383 (.getPort (.getConnectionProvider cs)))
            (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
@@ -877,18 +877,18 @@
 ;; TODO with SSLContext
 ;; (comment
 ;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "test-admin" :password "uruktesting"
-;;                                     :content-base "TutorialDB"}
+;;                                     :user "uruk-tester" :password "password"
+;;                                     :content-base "UrukDB"}
 ;;                                    (hosted-content-source "localhost" 8383
-;;                                                           "test-admin" "x" "TutorialDB"
+;;                                                           "uruk-tester" "x" "UrukDB"
 ;;                                                           (security-options TODO))
 ;;                                    {}))
 
 ;;   (describe-session-options (create-session {:uri "xdbc://localhost:8383/"
-;;                                     :user "test-admin" :password "uruktesting"
-;;                                     :content-base "TutorialDB"}
+;;                                     :user "uruk-tester" :password "password"
+;;                                     :content-base "UrukDB"}
 ;;                                    (managed-content-source connection-provider ;; TODO implement https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/ConnectionProvider.html interface
-;;                                                            "test-admin" "x" "TutorialDB")
+;;                                                            "uruk-tester" "x" "UrukDB")
 ;;                                    {})))
 
 (deftest content-src-options
