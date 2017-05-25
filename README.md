@@ -27,7 +27,7 @@ This branch handles MarkLogic 9 Early Access 4. To run, you'll need to create a 
 
 ### Resources
 
-See the [MarkLogic XCC Javadoc](https://docs.marklogic.com/javadoc/xcc/index.html) to understand what Uruk is talking to.
+For some background, see the [XCC Developer's Guide](https://docs.marklogic.com/guide/xcc/concepts) and the [MarkLogic XCC Javadoc](https://docs.marklogic.com/javadoc/xcc/index.html) to understand what Uruk is talking to.
 
 For examples of how to use specific types and functions, see `test/uruk/core_test.clj`. Examples in this README are included for reference in `src/uruk/examples/readme.clj`.
 
@@ -39,9 +39,9 @@ To play around with Uruk locally and to run the tests, you'll need to install an
 
 2. Navigate to http://localhost:8000/appservices/ and follow instructions for [Creating a New XDBC Server](https://docs.marklogic.com/guide/admin/xdbc#id_21458) in the [Administrator's Guide](https://docs.marklogic.com/guide/admin/xdbc) to create an XDBC server and an UrukDB database.
 
-3. Create UrukForest forest and attach it to UrukDB.
+3. Create a forest (e.g. "UrukForest") and attach it to the UrukDB database you just created.
 
-4. Create a `uruk-tester-role` with every default permission for `xa`, URI privilege `view-uri`, and execute-privilege `any-uri`
+4. Create a `uruk-tester-role` with every default permission for `xa`, URI privilege `view-uri`, and execute-privileges `any-uri`, `xdmp:external-binary`, and `xdmp:timestamp` (needed for specific tests)
 
 5. Create `uruk-tester` user with password "password" and roles of `xa` and `uruk-tester-role`. This will be necessary to run tests and README examples.
 
