@@ -10,14 +10,14 @@
 
 ;; Concrete example
 (with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
-                                          :user "rest-writer" :password "password"})]
+                                          :user "uruk-tester" :password "password"})]
   (uruk/execute-xquery session "\"hello world\""))
 ;; => ("hello world")
 
 ;; DB info
 (def db {:uri "xdbc://localhost:8383/"
-         :user "rest-admin" :password "password"
-         :content-base "TutorialDB"})
+         :user "uruk-tester" :password "password"
+         :content-base "UrukDB"})
 
 ;; Lots of functionality is in the optional config map:
 (with-open [session (uruk/create-session db)]
@@ -54,7 +54,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
-                                          :user "rest-admin" :password "x"})]
+                                          :user "uruk-tester" :password "password"})]
   (uruk/execute-xquery session "\"hello world\"" {:shape :single}))
 
 
@@ -135,11 +135,11 @@
 (with-open [session (uruk/create-session db {:transaction-mode :update})]
   ;; The first request (query) starts a new, multi-statement transaction:
   (uruk/execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
-  
+
   ;; This second request executes in the same transaction as the
   ;; previous request and sees the results of the previous update:
   (uruk/execute-xquery session "xdmp:document-insert('/docs/mst2.xml', fn:doc(\"/docs/mst1.xml\"));")
-  
+
   ;; After commit, updates are visible to other transactions. Commit
   ;; ends the transaction after current statement completes.
   (uruk/commit session) ;; <—- Transaction ends; updates are kept
@@ -149,7 +149,7 @@
   ;; before calling commit:
   (uruk/execute-xquery session "xdmp:document-delete('/docs/mst1.xml')")
   (uruk/rollback session) ;; <– Transaction ends; updates are lost
-  
+
   ;; Closing session without calling commit causes a rollback. The
   ;; following update is lost, since we don't commit before the end of
   ;; the (with-open) and its implicit `.close`:

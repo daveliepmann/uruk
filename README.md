@@ -35,16 +35,17 @@ For examples of how to use specific types and functions, see `test/uruk/core_tes
 
 To play around with Uruk locally and to run the tests, you'll need to install and configure MarkLogic on your machine.
 
-* Install and start a local MarkLogic server via the [Install Instructions](https://docs.marklogic.com/guide/installation/procedures#id_28962).
+1. Install and start a local MarkLogic server via the [Install Instructions](https://docs.marklogic.com/guide/installation/procedures#id_28962).
 
-* Navigate to http://localhost:8000/appservices/ and follow the [Setup Instructions](https://developer.marklogic.com/learn/java/setup#create-a-database) to (a) create a TutorialDB database, (b) create a REST API instance (**use port 8383**), and (c) create some initial REST users.
+2. Navigate to http://localhost:8000/appservices/ and follow instructions for [Creating a New XDBC Server](https://docs.marklogic.com/guide/admin/xdbc#id_21458) in the [Administrator's Guide](https://docs.marklogic.com/guide/admin/xdbc) to create an XDBC server and an UrukDB database.
 
-| Username | Password | Details | Purpose |
-| --- | --- | --- | --- |
-| 'test-admin' | 'uruktesting' | roles of **'rest-admin'** and **'rest-writer'**, <br/>default read/write/execute permissions for 'rest-writer' on all items created | Necessary to run tests |
-| 'rest-admin' | 'x' | roles of **'xa'** and **'rest-admin'** | Necessary to run the examples in this readme |
+3. Create UrukForest forest and attach it to UrukDB.
 
-* Finally, you must add the environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) in your Bash profile (*.bashrc*).
+4. Create a `uruk-tester-role` with every default permission for `xa`, URI privilege `view-uri`, and execute-privilege `any-uri`
+
+5. Create `uruk-tester` user with password "password" and roles of `xa` and `uruk-tester-role`. This will be necessary to run tests and README examples.
+
+6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/favicon.ico`) to your Bash profile (*.bashrc*).
 
 ### Examples of using Uruk
 For ease of replication, the examples below are also in `src/uruk/examples/readme.clj`.
@@ -58,7 +59,7 @@ Basic usage takes the form of:
 ...of which a concrete example is:
 ``` clojure
 (with-open [session (uruk/create-session {:uri "xdbc://localhost:8383/"
-                                          :user "rest-admin" :password "x"})]
+                                          :user "uruk-tester" :password "password"})]
   (uruk/execute-xquery session "\"hello world\""))
 ```
 ...which in this case should return `("hello world")` (if you provide valid credentials).
@@ -66,8 +67,8 @@ Basic usage takes the form of:
 Let's `def` our database information for brevity in the rest of our examples:
 ``` clojure
 (def db {:uri "xdbc://localhost:8383/"
-         :user "rest-admin" :password "x"
-         :content-base "TutorialDB"})
+         :user "uruk-tester" :password "password"
+         :content-base "UrukDB"})
 ```
 
 Using that database info, let's take an overview of query functionality. Most use cases are handled by passing an optional configuration map to functions `execute-query` or `execute-module`, like so:
