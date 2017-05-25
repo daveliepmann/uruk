@@ -288,12 +288,9 @@ Uruk is fully functional and production-ready. However, some aspects of the XCC/
 
 ## TODO
   - look into possibly using clojure.spec (once Clojure 1.9 is stable)
-  - ensure insert-element robustly covers needed use cases
+  - ensure `insert-element` robustly covers needed use cases
   - possibly implement REx to automatically parse XQuery for XDM variable types
   - possibly implement `use-fixtures` within tests to create user with appropriate permissions
-  - future: [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html) support
-  - future: [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) support; note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
-  - [ResultChannelName](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/ResultChannelName.html)?
 
 ## License
 
