@@ -5,6 +5,7 @@
             clojure.edn
             [clojure.data.json :as json]
             [clojure.data.xml :as xml]
+            [clojure.data.xml.tree :as tree]
             [slingshot.slingshot :as sling])
   (:import [java.util.logging Logger]
            java.net.URI
@@ -1054,7 +1055,7 @@
   [s]
   (if-not (string? s)
     false
-    (try (if (xml/parse-str s) true false)
+    (try (if (doall (tree/flatten-elements [(xml/parse-str s)])) true false)
          (catch javax.xml.stream.XMLStreamException xmlse
            false)
          (catch Exception e
