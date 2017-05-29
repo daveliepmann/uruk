@@ -1348,3 +1348,9 @@
       (= false (execute-xquery session "fn:doc-available(\"derp\")"
                                {:shape :single!
                                 :types {"xs:boolean" #(.asBoolean %)}})))))
+
+(deftest string-formats
+  (testing "String formats"
+    (testing "...invalid XML should not be identified as XML (per pull request #14)"
+      (is (false? (#'uruk.core/is-xml-string? "<xml><foo</xml>")))
+      (is (= :text (->string-format "<xml><foo</xml>"))))))
