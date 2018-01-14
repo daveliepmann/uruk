@@ -14,6 +14,9 @@ This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is pa
 
 
 ## Installation
+
+(To use Uruk, you need MarkLogic on your system. [Instructions for that](#marklogic-installation) are below.)
+
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
 In your *project.clj* dependencies: `[uruk "0.3.9"]`
@@ -43,7 +46,7 @@ To play around with Uruk locally and to run the tests, you'll need to install an
 
 5. Create `uruk-tester` user with password "password" and roles of `xa` and `uruk-tester-role`. This will be necessary to run tests and README examples.
 
-6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/resources/ml-favicon.ico`) to your Bash profile (*.bashrc*).
+6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/path/to/uruk/resources/ml-favicon.ico`) to your Bash profile (*.bashrc*).
 
 You should now be able to run `lein test` and, if you start up a REPL, the examples in *test/uruk/core_test.clj*.
 
@@ -279,7 +282,7 @@ The `insert-string` function used here automatically detects string type and ins
 
 
 ## Uncovered surface area
-Uruk is fully functional and production-ready. However, some aspects of the XCC/J API have not yet been implemented:
+Uruk is sturdy and ready for production. However, some aspects of the XCC/J API have not yet been implemented:
 
   - [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html)
   - [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) -- note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
