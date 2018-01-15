@@ -111,13 +111,24 @@
   "True if given session configuration conforms to the expected
   default Session; false otherwise."
   [session]
-  (and (is (instance? RequestOptions (:default-request-options session)))
-       (is (instance? RequestOptions (:effective-request-options session)))
-       (is (and (instance? Logger (:logger session))
-                (= "com.marklogic.xcc" (.getName (:logger session)))))
-       (is (nil? (:user-object session)))
-       (is (= 0 (:transaction-timeout session)))
-       (is (nil? (:transaction-mode session)))))
+  (testing "is default session config?"
+    (testing "default request options are valid?"
+      (is (instance? RequestOptions (:default-request-options session))))
+    (testing "effective request options are valid?"
+      (is (instance? RequestOptions (:effective-request-options session))))
+    (testing "logger is valid?"
+      (is (and (instance? Logger (:logger session))
+               (= "com.marklogic.xcc" (.getName (:logger session))))))
+    (testing "user object not set?"
+      (is (nil? (:user-object session))))
+    (testing "timeout not set, so 0?"
+      (is (= 0 (:transaction-timeout session))))
+    (testing "transaction mode not set, so nil?"
+      (is (nil? (:transaction-mode session)))) ;; XXX DEPRECATED, will be removed in a future version
+    (testing "update-mode not set, so nil?"
+      (is (nil? (:update-mode session))))
+    (testing "auto-commit not set, so nil?"
+      (is (nil? (:auto-commit? session))))))
 
 (deftest default-session-config
   (testing "A session with no explicitly-set configuration must have default configuration"
@@ -168,63 +179,84 @@
   "True if given `session` is configured as according to
   `expected-config`; false otherwise."
   [session expected-config]
-  (and (and (= (:auto-retry-delay-millis (:default-request-options expected-config))
-               (.getAutoRetryDelayMillis (:default-request-options session))
-               (.getAutoRetryDelayMillis (:effective-request-options session)))
-            (= (:cache-result (:default-request-options expected-config))
-               (.getCacheResult (:default-request-options session))
-               (.getCacheResult (:effective-request-options session)))
-            (= (:default-xquery-version (:default-request-options expected-config))
-               (.getDefaultXQueryVersion (:default-request-options session))
-               (.getDefaultXQueryVersion (:effective-request-options session)))
-            (= (:effective-point-in-time (:default-request-options expected-config))
-               (.getEffectivePointInTime (:default-request-options session))
-               (.getEffectivePointInTime (:effective-request-options session)))
-            (= (:locale (:default-request-options expected-config))
-               (.getLocale (:default-request-options session))
-               (.getLocale (:effective-request-options session)))
-            (= (:max-auto-retry (:default-request-options expected-config))
-               (.getMaxAutoRetry (:default-request-options session))
-               (.getMaxAutoRetry (:effective-request-options session)))
+  (testing "session config is as expected?"
+    (testing "auto-retry-delay-millis"
+      (is (= (:auto-retry-delay-millis (:default-request-options expected-config))
+             (.getAutoRetryDelayMillis (:default-request-options session))
+             (.getAutoRetryDelayMillis (:effective-request-options session)))))
+    (testing "cache-result"
+      (is (= (:cache-result (:default-request-options expected-config))
+             (.getCacheResult (:default-request-options session))
+             (.getCacheResult (:effective-request-options session)))))
+    (testing "default-xquery-version"
+      (is (= (:default-xquery-version (:default-request-options expected-config))
+             (.getDefaultXQueryVersion (:default-request-options session))
+             (.getDefaultXQueryVersion (:effective-request-options session)))))
+    (testing "effective-point-in-time"
+      (is (= (:effective-point-in-time (:default-request-options expected-config))
+             (.getEffectivePointInTime (:default-request-options session))
+             (.getEffectivePointInTime (:effective-request-options session)))))
+    (testing "locale"
+      (is (= (:locale (:default-request-options expected-config))
+             (.getLocale (:default-request-options session))
+             (.getLocale (:effective-request-options session)))))
+    (testing "max-auto-retry"
+      (is (= (:max-auto-retry (:default-request-options expected-config))
+             (.getMaxAutoRetry (:default-request-options session))
+             (.getMaxAutoRetry (:effective-request-options session)))))
 
-            (= (:query-language (:default-request-options expected-config))
-               (.getQueryLanguage (:default-request-options session))
-               (.getQueryLanguage (:effective-request-options session)))
-            (= (:request-name (:default-request-options expected-config))
-               (.getRequestName (:default-request-options session))
-               (.getRequestName (:effective-request-options session)))
-            (= (:request-time-limit (:default-request-options expected-config))
-               (.getRequestTimeLimit (:default-request-options session))
-               (.getRequestTimeLimit (:effective-request-options session)))
-            (= (:result-buffer-size (:default-request-options expected-config))
-               (.getResultBufferSize (:default-request-options session))
-               (.getResultBufferSize (:effective-request-options session)))
-            (= (:timeout-millis (:default-request-options expected-config))
-               (.getTimeoutMillis (:default-request-options session))
-               (.getTimeoutMillis (:effective-request-options session)))
-            (= (:timezone (:default-request-options expected-config))
-               (.getTimeZone (:default-request-options session))
-               (.getTimeZone (:effective-request-options session))))
+    (testing "query-language"
+      (is (= (:query-language (:default-request-options expected-config))
+             (.getQueryLanguage (:default-request-options session))
+             (.getQueryLanguage (:effective-request-options session)))))
+    (testing "request-name"
+      (is (= (:request-name (:default-request-options expected-config))
+             (.getRequestName (:default-request-options session))
+             (.getRequestName (:effective-request-options session)))))
+    (testing "request-time-limit"
+      (is (= (:request-time-limit (:default-request-options expected-config))
+             (.getRequestTimeLimit (:default-request-options session))
+             (.getRequestTimeLimit (:effective-request-options session)))))
+    (testing "result-buffer-size"
+      (is (= (:result-buffer-size (:default-request-options expected-config))
+             (.getResultBufferSize (:default-request-options session))
+             (.getResultBufferSize (:effective-request-options session)))))
+    (testing "timeout-millis"
+      (is (= (:timeout-millis (:default-request-options expected-config))
+             (.getTimeoutMillis (:default-request-options session))
+             (.getTimeoutMillis (:effective-request-options session)))))
+    (testing "timezone"
+      (is (= (:timezone (:default-request-options expected-config))
+             (.getTimeZone (:default-request-options session))
+             (.getTimeZone (:effective-request-options session)))))
 
-       (and (instance? Logger (:logger session))
-            (= (.getName (:logger expected-config))
-               (.getName (:logger session))))
-       (= (:user-object expected-config)
-          (:user-object session))
-       (= (:transaction-timeout session)
-          (:transaction-timeout expected-config))
-       (= (:transaction-mode session)
-          (:transaction-mode expected-config))))
+    (testing "logger is instance of Logger?"
+      (is (instance? Logger (:logger session))))
+    (testing "logger name correct?"
+      (is (= (.getName (:logger expected-config))
+             (.getName (:logger session)))))
+    (testing "user-object"
+      (is (= (:user-object expected-config)
+             (:user-object session))))    
+    (testing "transaction-timeout"
+      (is (= (:transaction-timeout session)
+             (:transaction-timeout expected-config))))
+    
+    (testing "update-mode"
+      (is (= (:update-mode session)
+             (:update-mode expected-config))))       
+    (testing "auto-commit?"
+      (is (= (:auto-commit? session)
+             (:auto-commit? expected-config))))))
 
 (deftest set-session-config
-  (testing "A session with explicitly-set configuration must reflect that configuration"
+  (testing "A session with explicitly-set configuration must reflect that configuration..."
     (let [dummy-session (create-session db)
           opts {:default-request-options {:auto-retry-delay-millis 98
                                           :cache-result false
                                           :default-xquery-version "0.9-ml"
                                           ;; XXX requires `xdmp:timestamp` execute privilege on the role for the current user
-                                          :effective-point-in-time (.getCurrentServerPointInTime
-                                                                    dummy-session)
+                                          :effective-point-in-time (.getCurrentServerPointInTime dummy-session)
                                           :locale (Locale. "ru")
                                           :max-auto-retry 17
                                           :query-language "de"
@@ -235,35 +267,36 @@
                                           :timezone (TimeZone/getTimeZone "Pacific/Chuuk")}
                 :logger (Logger/getLogger "test")
                 :transaction-timeout 56
-                :transaction-mode :query}]
+                :auto-commit? false
+                :update-mode :false}]
 
-      (testing "with standard database map"
+      (testing "with standard database map..."
         (with-open [sess (create-session db opts)]
           (as-expected-session-config? (session->map sess) opts)))
-      (testing "with uri content source"
+      (testing "with uri content source..."
         (with-open [sess (create-session
                           db (make-uri-content-source "xdbc://localhost:8383/")
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
-      (testing "with uri content source using options"
+      (testing "with uri content source using options..."
         (with-open [sess (create-session
                           db (make-uri-content-source "xdbc://localhost:8383/"
                                                       {:preemptive-auth false})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
 
-      (testing "with hosted content source"
+      (testing "with hosted content source..."
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383)
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
-      (testing "with hosted content source using content base"
+      (testing "with hosted content source using content base..."
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
                                                          {:content-base "UrukDB"})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
-      (testing "with hosted content source using user, password, content-base"
+      (testing "with hosted content source using user, password, content-base..."
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
                                                          {:user "uruk-tester"
@@ -271,7 +304,7 @@
                                                           :content-base "UrukDB"})
                           opts)]
           (as-expected-session-config? (session->map sess) opts)))
-      (testing "with hosted content source using user and password"
+      (testing "with hosted content source using user and password..."
         (with-open [sess (create-session
                           db (make-hosted-content-source "localhost" 8383
                                                          {:user "uruk-tester"
@@ -846,9 +879,9 @@
 (deftest content-source-creation-with-uri
   (testing "content source creation from just a URI"
     (let [cs (make-uri-content-source "xdbc://localhost:8383/")]
-      (and (instance? ContentSource cs)
-           (= 8383 (.getPort (.getConnectionProvider cs)))
-           (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
+      (is (instance? ContentSource cs))
+      (is (= 8383 (.getPort (.getConnectionProvider cs))))
+      (is (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
 
 ;; TODO content source from URI and securityoptions
 ;; (deftest content-source-creation-with-uri-and-security-options
@@ -862,17 +895,17 @@
 (deftest content-source-creation-with-host-and-port
   (testing "content source creation from host and port"
     (let [cs (make-hosted-content-source "localhost" 8383)]
-      (and (instance? ContentSource cs)
-           (= 8383 (.getPort (.getConnectionProvider cs)))
-           (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
+      (is (instance? ContentSource cs))
+      (is (= 8383 (.getPort (.getConnectionProvider cs))))
+      (is (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
 
 (deftest content-source-creation-with-host-port-user-pwd
   (testing "content source creation from host and port"
     (let [cs (make-hosted-content-source "localhost" 8383
                                          {:user "uruk-tester" :password "password"})]
-      (and (instance? ContentSource cs)
-           (= 8383 (.getPort (.getConnectionProvider cs)))
-           (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
+      (is (instance? ContentSource cs))
+      (is (= 8383 (.getPort (.getConnectionProvider cs))))
+      (is (= "localhost" (.getHostName (.getConnectionProvider cs)))))))
 
 ;; TODO with SSLContext
 ;; (comment
@@ -893,14 +926,10 @@
 
 (deftest content-src-options
   (testing "Content Source preemptive-authentication settings"
-    (is (true? (.isAuthenticationPreemptive (make-uri-content-source "xdbc://localhost:8383/"
-                                                                     {:preemptive-auth true}))))
-    (is (false? (.isAuthenticationPreemptive (make-uri-content-source "xdbc://localhost:8383/"
-                                                                      {:preemptive-auth false}))))
-    (is (true? (.isAuthenticationPreemptive (make-hosted-content-source "localhost" 8383
-                                                                        {:preemptive-auth true}))))
-    (is (false? (.isAuthenticationPreemptive (make-hosted-content-source "localhost" 8383
-                                                                         {:preemptive-auth false}))))
+    (is (true? (.isAuthenticationPreemptive (make-uri-content-source "xdbc://localhost:8383/" {:preemptive-auth true}))))
+    (is (false? (.isAuthenticationPreemptive (make-uri-content-source "xdbc://localhost:8383/" {:preemptive-auth false}))))
+    (is (true? (.isAuthenticationPreemptive (make-hosted-content-source "localhost" 8383 {:preemptive-auth true}))))
+    (is (false? (.isAuthenticationPreemptive (make-hosted-content-source "localhost" 8383 {:preemptive-auth false}))))
     ;; TODO with make-cp-content-source, once we want to delve into
     ;; the extreme complexity of ConnectionProvider
     )
@@ -1336,18 +1365,18 @@
 (deftest custom-fns
   (testing "Custom response handling functions"
     (with-open [session (create-session db)]
-      (instance? com.marklogic.xcc.types.impl.XsBooleanImpl
-                 (execute-xquery session "fn:doc-available(\"derp\")"
-                                 {:shape :single!
-                                  :types {"xs:boolean" identity}})))
+      (is (instance? com.marklogic.xcc.types.impl.XsBooleanImpl
+                     (execute-xquery session "fn:doc-available(\"derp\")"
+                                     {:shape :single!
+                                      :types {"xs:boolean" identity}}))))
     (with-open [session (create-session db)]
-      (= "false" (execute-xquery session "fn:doc-available(\"derp\")"
-                                 {:shape :single!
-                                  :types {"xs:boolean" #(.asString %)}})))
+      (is (= "false" (execute-xquery session "fn:doc-available(\"derp\")"
+                                     {:shape :single!
+                                      :types {"xs:boolean" #(.asString %)}}))))
     (with-open [session (create-session db)]
-      (= false (execute-xquery session "fn:doc-available(\"derp\")"
-                               {:shape :single!
-                                :types {"xs:boolean" #(.asBoolean %)}})))))
+      (is (= false (execute-xquery session "fn:doc-available(\"derp\")"
+                                   {:shape :single!
+                                    :types {"xs:boolean" #(.asBoolean %)}}))))))
 
 (deftest string-formats
   (testing "String formats"

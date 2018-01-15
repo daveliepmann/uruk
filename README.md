@@ -220,7 +220,8 @@ Multiple database updates that must occur together can take advantage of transac
 We translate the original Java to Clojure, taking advantage of Clojure’s `with-open` idiom:
 
 ``` clojure
-(with-open [session (uruk/create-session db {:transaction-mode :update})]
+;; Open a session and configure it to trigger multi-statement transaction use:
+(with-open [session (uruk/create-session db {:auto-commit? false :update-mode true})]
   ;; The first request (query) starts a new, multi-statement transaction:
   (uruk/execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
 
@@ -291,6 +292,7 @@ Uruk is sturdy and ready for production. However, some aspects of the XCC/J API 
 
 ## TODO
   - look into possibly using clojure.spec (once Clojure 1.9 is stable)
+  - generative testing (for instance, in `as-expected-session-config?`)
   - ensure `insert-element` robustly covers needed use cases
   - possibly implement REx to automatically parse XQuery for XDM variable types
   - possibly implement `use-fixtures` within tests to create user with appropriate permissions
