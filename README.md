@@ -2,7 +2,7 @@
 [<img align="right" src="resources/gilgamesh-tablet.jpg"/>](https://en.wikipedia.org/wiki/File:Tablet_V_of_the_Epic_of_Gligamesh.JPG)
 Uruk is a Clojure library wrapping [MarkLogic](http://www.marklogic.com/what-is-marklogic/)'s [XML Content Connector for Java (XCC/J)](https://developer.marklogic.com/products/xcc). Uruk empowers you to access your Enterprise NoSQL database from Clojure.
 
-By leveraging MarkLogic's XCC API, you can use Uruk to:
+By using Uruk, you can leverage MarkLogic's XCC API to:
 
  - evaluate stored XQuery programs
  - dynamically construct and evaluate XQuery programs
@@ -10,15 +10,17 @@ By leveraging MarkLogic's XCC API, you can use Uruk to:
 
 The name Uruk comes from the [ancient Mesopotamian city-state](http://www.metmuseum.org/toah/hd/uruk/hd_uruk.htm) and [period](http://www.metmuseum.org/toah/hd/wrtg/hd_wrtg.htm) in which some of the oldest known writing has been found. One can see Uruk as perhaps the first document database—and it certainly wasn’t organized relationally.
 
-This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is part of the emacs [XQuery-mode](https://github.com/xquery-mode/) stack.
+This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is part of the [XQuery-mode](https://github.com/xquery-mode/) stack for working with XQuery in emacs.
 
 
 ## Installation
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
-In your *project.clj* dependencies: `[uruk "0.3.9"]`
+In your *project.clj* dependencies: `[uruk "0.3.10"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
+
+To run Uruk locally, you need MarkLogic [installed on your machine](https://docs.marklogic.com/guide/installation/procedures#id_28962). To run Uruk's tests or examples, see [configuring MarkLogic for Uruk](#marklogic-configuration) below.)
 
 
 ## Usage
@@ -29,21 +31,25 @@ For some background, see the [XCC Developer's Guide](https://docs.marklogic.com/
 
 For examples of how to use specific types and functions, see `test/uruk/core_test.clj`. Examples in this README are included for reference in `src/uruk/examples/readme.clj`.
 
-### MarkLogic installation
+### MarkLogic configuration
 
-To play around with Uruk locally and to run the tests, you'll need to install and configure MarkLogic on your machine.
+To run Uruk's tests or evaluate its examples directly in a REPL, you'll need to configure MarkLogic on your machine to match the settings Uruk expects. If you have an existing MarkLogic install, feel free to skip these steps and instead point your REPL at your own database.
 
 1. Install and start a local MarkLogic server via the [Install Instructions](https://docs.marklogic.com/guide/installation/procedures#id_28962).
 
-2. Navigate to http://localhost:8000/appservices/ and follow instructions for [Creating a New XDBC Server](https://docs.marklogic.com/guide/admin/xdbc#id_21458) in the [Administrator's Guide](https://docs.marklogic.com/guide/admin/xdbc) to create an XDBC server and an UrukDB database.
+1. [Open the Admin Interface](https://docs.marklogic.com/guide/admin/admin_inter#id_69619) at http://localhost:8001/ 
 
-3. Create a forest (e.g. "UrukForest") and attach it to the UrukDB database you just created.
+1. [Create a forest](https://docs.marklogic.com/guide/admin/getting_started#id_13483) named "UrukForest"
+ 
+1. [Create a database](https://docs.marklogic.com/guide/admin/databases#id_60599) named "UrukDB". Attach it to UrukForest but otherwise leave use the default settings.
+  
+1. [Create an XDBC Server](https://docs.marklogic.com/guide/admin/xdbc#id_21458) named "UrukServer" on port 8383.
 
-4. Create a `uruk-tester-role` with every default permission for `xa`, URI privilege `view-uri`, and execute-privileges `any-uri`, `xdmp:external-binary`, and `xdmp:timestamp` (needed for specific tests)
+4. Create role `uruk-tester-role` with URI privilege `view-uri`, execute-privileges `any-uri`, `xdmp:external-binary`, and `xdmp:timestamp`, and all the default document permissions (`node-update`, `execute`, `update`, `insert`, and `read`) for `xa` (these are all needed for specific tests).
 
-5. Create `uruk-tester` user with password "password" and roles of `xa` and `uruk-tester-role`. This will be necessary to run tests and README examples.
+5. Create user `uruk-tester` with password "password" and roles of `xa` and `uruk-tester-role`. This will be used to run tests and README examples.
 
-6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/Users/<yourname>/src/uruk/resources/ml-favicon.ico`) to your Bash profile (*.bashrc*).
+6. Finally, add environment variable `URUK_TEST_IMG_PATH` (e.g. `export URUK_TEST_IMG_PATH=/path/to/uruk/resources/ml-favicon.ico`) to your Bash profile (*.bashrc*) and make sure it's available to your environment.
 
 You should now be able to run `lein test` and, if you start up a REPL, the examples in *test/uruk/core_test.clj*.
 
@@ -217,7 +223,8 @@ Multiple database updates that must occur together can take advantage of transac
 We translate the original Java to Clojure, taking advantage of Clojure’s `with-open` idiom:
 
 ``` clojure
-(with-open [session (uruk/create-session db {:transaction-mode :update})]
+;; Open a session and configure it to trigger multi-statement transaction use:
+(with-open [session (uruk/create-session db {:auto-commit? false :update-mode true})]
   ;; The first request (query) starts a new, multi-statement transaction:
   (uruk/execute-xquery session "xdmp:document-insert('/docs/mst1.xml', <data><stuff/></data>)")
 
@@ -279,7 +286,7 @@ The `insert-string` function used here automatically detects string type and ins
 
 
 ## Uncovered surface area
-Uruk is fully functional and production-ready. However, some aspects of the XCC/J API have not yet been implemented:
+Uruk is sturdy and ready for production. However, some aspects of the XCC/J API have not yet been implemented:
 
   - [JNDI](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/jndi/package-summary.html)
   - [XCC Service Provider Interface](https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/spi/package-summary.html) -- note the MarkLogic disclaimer that this is for advanced users only, not endorsed for independent use, and "use at your own risk"
@@ -288,6 +295,7 @@ Uruk is fully functional and production-ready. However, some aspects of the XCC/
 
 ## TODO
   - look into possibly using clojure.spec (once Clojure 1.9 is stable)
+  - generative testing (for instance, in `as-expected-session-config?`)
   - ensure `insert-element` robustly covers needed use cases
   - possibly implement REx to automatically parse XQuery for XDM variable types
   - possibly implement `use-fixtures` within tests to create user with appropriate permissions

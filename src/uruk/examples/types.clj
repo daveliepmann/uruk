@@ -4,8 +4,8 @@
 
 (def session
   (create-session {:uri "xdbc://localhost:8383/"
-                   :user "rest-admin" :password "x"
-                   :content-base "TutorialDB"}))
+                   :user "uruk-tester" :password "password"
+                   :content-base "UrukDB"}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Interfaces for JSON

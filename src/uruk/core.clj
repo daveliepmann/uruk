@@ -10,7 +10,8 @@
   (:import [java.util.logging Logger]
            java.net.URI
            [com.marklogic.xcc
-            Session$TransactionMode
+            Session$TransactionMode ;; XXX DEPRECATED, will be removed in future version
+            Session$Update
             RequestOptions SecurityOptions
             ContentCreateOptions ContentPermission ContentCapability
             ContentSource ContentSourceFactory ContentFactory
@@ -56,13 +57,25 @@
    :update  ContentCapability/UPDATE})
 
 (def ->transaction-mode
-  "Mapping of keywords to valid Session transaction modes. See
+  "DEPRECATED - see https://docs.marklogic.com/guide/relnotes/chap5#id_91389
+  Mapping of keywords to valid Session transaction modes. See
   https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.TransactionMode.html"
-  {:auto               Session$TransactionMode/AUTO
-   :query              Session$TransactionMode/QUERY
-   :update             Session$TransactionMode/UPDATE
-   :update-auto-commit Session$TransactionMode/UPDATE_AUTO_COMMIT})
+  ^{:deprecated "9.0-2"}
+  {:auto               Session$TransactionMode/AUTO ;; XXX DEPRECATED
+   :query              Session$TransactionMode/QUERY ;; XXX DEPRECATED
+   :update             Session$TransactionMode/UPDATE ;; XXX DEPRECATED
+   :update-auto-commit Session$TransactionMode/UPDATE_AUTO_COMMIT ;; XXX DEPRECATED
+   })
 
+(def ->update-mode
+  "Mapping of keywords _and_ booleans to valid Session update modes. See
+  https://docs.marklogic.com/javadoc/xcc/com/marklogic/xcc/Session.Update.html"
+  ;; Please be aware of the discrepancy between MarkLogic XCC naming (Enum Session.Update) and Uruk's (update-mode), in order to avoid conflicting with clojure.core's `update` function.
+  {false  Session$Update/FALSE
+   :false Session$Update/FALSE
+   :auto  Session$Update/AUTO
+   true   Session$Update/TRUE
+   :true  Session$Update/TRUE})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Type conversion
@@ -603,7 +616,8 @@
 
 (def valid-session-config-options
   #{:default-request-options :logger :user-object
-    :transaction-mode :transaction-timeout})
+    :transaction-mode ;; XXX DEPRECATED, will be removed in future version
+    :transaction-timeout :auto-commit? :update-mode})
 
 (defn validate-session-config-options
   "Raises an error if the given configuration options are invalid for
@@ -621,7 +635,8 @@
   "Configures the given MarkLogic `session` according to the given
   `config-options`. See `create-session`."
   [session {:keys [default-request-options logger user-object
-                   transaction-mode transaction-timeout]
+                   transaction-mode ;; XXX DEPRECATED, will be removed in future version
+                   transaction-timeout auto-commit? update-mode]
             :as config-options}]
   (when (map? default-request-options)
     (.setDefaultRequestOptions session (make-request-options default-request-options)))
@@ -630,10 +645,14 @@
   ;; NB: the following is not the strictest test
   (when (instance? Object user-object)
     (.setUserObject session user-object))
-  (when (keyword? transaction-mode)
+  (when (keyword? transaction-mode) ;; XXX DEPRECATED
     (.setTransactionMode session (->transaction-mode transaction-mode)))
   (when (integer? transaction-timeout)
     (.setTransactionTimeout session transaction-timeout))
+  (when (boolean? auto-commit?)
+    (.setAutoCommit session auto-commit?))
+  (when (or (keyword? update-mode) (boolean? update-mode))
+    (.setUpdate session (->update-mode update-mode)))
   session)
 
 (defn create-session
@@ -660,18 +679,22 @@
    (create-session* db-info))
 
   ([db-info {:keys [default-request-options logger user-object
-                    transaction-mode transaction-timeout]
+                    transaction-mode ;; XXX DEPRECATED
+                    transaction-timeout auto-commit? update-mode]
              :as config-options}]
    (validate-session-config-options config-options)
    (create-session db-info
                    nil
                    {:default-request-options default-request-options
                     :logger logger :user-object user-object
-                    :transaction-mode transaction-mode
-                    :transaction-timeout transaction-timeout}))
+                    :transaction-mode transaction-mode ;; XXX DEPRECATED
+                    :transaction-timeout transaction-timeout
+                    :auto-commit? auto-commit?
+                    :update-mode update-mode}))
 
   ([db-info content-source {:keys [default-request-options logger user-object
-                                   transaction-mode transaction-timeout]
+                                   transaction-mode ;; XXX DEPRECATED
+                                   transaction-timeout auto-commit? update-mode]
                             :as config-options}]
    (validate-session-config-options config-options)
    (configure-session (create-session* db-info content-source) config-options)))
@@ -687,7 +710,8 @@
   ([content-source]
    (create-default-session content-source nil))
   ([content-source {:keys [default-request-options logger user-object
-                           transaction-mode transaction-timeout]
+                           transaction-mode ;; XXX DEPRECATED
+                           transaction-timeout auto-commit? update-mode]
                     :as config-options}]
    (validate-session-config-options config-options)
    (configure-session (create-session* {} content-source) config-options)))
@@ -742,8 +766,13 @@
    :closed? (.isClosed session) ;; TODO maybe create (defn closed? [session] ...) ? Except it wouldn't be specific to Session in this ns, and ResultSequence also has isClosed, so it's ambiguous.
    :cached-transaction-timeout (.getCachedTxnTimeout session)
    :transaction-timeout (.getTransactionTimeout session)
-   :transaction-mode ((clojure.set/map-invert ->transaction-mode)
-                      (.getTransactionMode session))})
+   :transaction-mode ((clojure.set/map-invert ->transaction-mode) (.getTransactionMode session)) ;; XXX DEPRECATED, will be removed in a later version
+   :update-mode (try ((clojure.set/map-invert ->update-mode) (.getUpdate session))
+                     (catch java.lang.NullPointerException npe
+                       nil))
+   :auto-commit? (try (.isAutoCommit session)
+                     (catch java.lang.NullPointerException npe
+                       nil))})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1102,10 +1131,9 @@
 ;;;;
 ;;;; Users must manage their own transactions, either from within
 ;;;; XQuery or programmatically. If working programmatically, wrapping
-;;;; requests in `with-open` is strongly recommended. One may use
-;;;; these functions within `with-open` after setting the transaction
-;;;; mode to `:update` or `:query` on the session via the
-;;;; `:transaction-mode` option.
+;;;; requests in `with-open` is strongly recommended. One may also use
+;;;; the following functions within `with-open` after setting the
+;;;; `auto-commit?` configuration option to `false` on the session.
 ;;;;
 ;;;; See https://docs.marklogic.com/guide/xcc/concepts#id_23310
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
