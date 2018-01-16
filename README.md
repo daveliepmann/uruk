@@ -295,6 +295,7 @@ Uruk is sturdy and ready for production. However, some aspects of the XCC/J API 
 
 ## TODO
   - look into possibly using clojure.spec (once Clojure 1.9 is stable)
+  - (breaking change) consider namespaced keys for various config options
   - generative testing (for instance, in `as-expected-session-config?`)
   - ensure `insert-element` robustly covers needed use cases
   - possibly implement REx to automatically parse XQuery for XDM variable types
