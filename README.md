@@ -10,17 +10,26 @@ By using Uruk, you can leverage MarkLogic's XCC API to:
 
 The name Uruk comes from the [ancient Mesopotamian city-state](http://www.metmuseum.org/toah/hd/uruk/hd_uruk.htm) and [period](http://www.metmuseum.org/toah/hd/wrtg/hd_wrtg.htm) in which some of the oldest known writing has been found. One can see Uruk as perhaps the first document database—and it certainly wasn’t organized relationally.
 
-This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). It is part of the [XQuery-mode](https://github.com/xquery-mode/) stack for working with XQuery in emacs.
+### Maintenance Status
+
+Uruk is used in production and is under active maintenance. This project is sponsored by [LambdaWerk](https://lambdawerk.com/home).
+
+Uruk is part of the [XQuery-mode](https://github.com/xquery-mode/) stack for working with XQuery in emacs.
 
 
 ## Installation
 [![Clojars Project](https://img.shields.io/clojars/v/uruk.svg)](https://clojars.org/uruk)
 
-In your *project.clj* dependencies: `[uruk "0.3.11"]`
+To install, add the following dependency to your *project.clj* dependencies: `[uruk "0.3.11"]`
 
 In your namespace: `(:require [uruk.core :as uruk])`. (I also like `ur` as an alias, for brevity. Delightfully, Ur is another [ancient city-state with ties to the origins of written documents](https://en.wikipedia.org/wiki/Ur).)
 
 To run Uruk locally, you need MarkLogic [installed on your machine](https://docs.marklogic.com/guide/installation/procedures#id_28962). To run Uruk's tests or examples, see [configuring MarkLogic for Uruk](#marklogic-configuration) below.)
+
+
+## API docs
+
+Online [API docs](https://daveliepmann.github.io/uruk/) via Codox and [autodoc](https://github.com/plexus/autodoc).
 
 
 ## Usage
@@ -303,7 +312,7 @@ Uruk is sturdy and ready for production. However, some aspects of the XCC/J API 
 
 ## License
 
-Copyright © 2016 David Liepmann
+Copyright © 2016-2018 David Liepmann
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

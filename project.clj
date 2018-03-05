@@ -10,4 +10,9 @@
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/data.xml "0.1.0-beta2"]
                  [slingshot "0.12.2"]]
+  :profiles {:codox {:dependencies [[codox-theme-rdash "0.1.2"]]
+                     :plugins [[lein-codox "0.10.3"]]
+                     :codox {:metadata {:doc/format :markdown} ;; docstring format
+                             :output-path "gh-pages"
+                             :themes [:rdash]}}}
   :repositories [["MarkLogic-releases" "http://developer.marklogic.com/maven2"]])

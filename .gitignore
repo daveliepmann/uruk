@@ -1,3 +1,6 @@
 /.DS_Store
 /.lein-failures
 /.nrepl-port
+target/doc
+gh-pages
+/gh-pages
