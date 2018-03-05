@@ -770,9 +770,7 @@
    :update-mode (try ((clojure.set/map-invert ->update-mode) (.getUpdate session))
                      (catch java.lang.NullPointerException npe
                        nil))
-   :auto-commit? (try (.isAutoCommit session)
-                     (catch java.lang.NullPointerException npe
-                       nil))})
+   :auto-commit? (.isAutoCommit session)})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

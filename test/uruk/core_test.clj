@@ -128,7 +128,7 @@
     (testing "update-mode not set, so nil?"
       (is (nil? (:update-mode session))))
     (testing "auto-commit not set, so nil?"
-      (is (nil? (:auto-commit? session))))))
+      (is (true? (:auto-commit? session))))))
 
 (deftest default-session-config
   (testing "A session with no explicitly-set configuration must have default configuration"
