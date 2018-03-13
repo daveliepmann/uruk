@@ -303,6 +303,7 @@ Uruk is sturdy and ready for production. However, some aspects of the XCC/J API 
 
 
 ## TODO
+  - update clojure.data.xml preview dependency--see https://github.com/clojure/data.xml/blob/master/CHANGES.md
   - look into possibly using clojure.spec (once Clojure 1.9 is stable)
   - (breaking change) consider namespaced keys for various config options
   - generative testing (for instance, in `as-expected-session-config?`)
