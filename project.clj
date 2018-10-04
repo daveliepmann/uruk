@@ -15,4 +15,6 @@
                      :codox {:metadata {:doc/format :markdown} ;; docstring format
                              :output-path "gh-pages"
                              :themes [:rdash]}}}
-  :repositories [["MarkLogic-releases" "http://developer.marklogic.com/maven2"]])
+  :repositories [["MarkLogic-releases" "http://developer.marklogic.com/maven2"]]
+  :jar-exclusions     [#"examples", #".jpg"]
+  :uberjar-exclusions [#"examples", #".jpg"])
