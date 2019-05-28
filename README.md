@@ -12,7 +12,7 @@ The name Uruk comes from the [ancient Mesopotamian city-state](http://www.metmus
 
 ### Maintenance Status
 
-Uruk is used in production and is under active maintenance. This project is sponsored by [LambdaWerk](https://lambdawerk.com/home).
+Uruk is used in production and is under active maintenance. This project is sponsored by [LambdaWerk](https://lambdawerk.com/home). For commercial support inquiries please get in touch at [dave.liepmann@gmail.com](mailto:dave.liepmann@gmail.com).
 
 Uruk is part of the [XQuery-mode](https://github.com/xquery-mode/) stack for working with XQuery in emacs.
 
