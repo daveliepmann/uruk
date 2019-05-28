@@ -1,8 +1,8 @@
 # uruk
 [<img align="right" src="resources/gilgamesh-tablet.jpg"/>](https://en.wikipedia.org/wiki/File:Tablet_V_of_the_Epic_of_Gligamesh.JPG)
-Uruk is a Clojure library wrapping [MarkLogic](http://www.marklogic.com/what-is-marklogic/)'s [XML Content Connector for Java (XCC/J)](https://developer.marklogic.com/products/xcc). Uruk empowers you to access your Enterprise NoSQL database from Clojure.
+Uruk is the Clojure wrapper for [MarkLogic](http://www.marklogic.com/what-is-marklogic/)'s [XML Content Connector for Java (XCC/J)](https://developer.marklogic.com/products/xcc). Uruk empowers you to access your Enterprise NoSQL database from Clojure.
 
-By using Uruk, you can leverage MarkLogic's XCC API to:
+With Uruk, you can use MarkLogic's XCC API to:
 
  - evaluate stored XQuery programs
  - dynamically construct and evaluate XQuery programs
@@ -29,7 +29,7 @@ To run Uruk locally, you need MarkLogic [installed on your machine](https://docs
 
 ## API docs
 
-Online [API docs](https://daveliepmann.github.io/uruk/) via Codox and [autodoc](https://github.com/plexus/autodoc).
+Online [API docs](https://daveliepmann.github.io/uruk/) via Codox and [autodoc](https://github.com/plexus/autodoc). Uruk documentation is also available on [cljdoc](https://cljdoc.org/d/uruk/).
 
 
 ## Usage
